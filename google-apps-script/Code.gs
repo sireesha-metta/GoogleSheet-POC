@@ -196,7 +196,77 @@ function doPost(e) {
   }
 }
 
-function doGet() {
+function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || "";
+
+  if (action === "getSubmissions") {
+    try {
+      var ss = SpreadsheetApp.openById(SHEET_ID);
+      var rowSheet = ss.getSheetByName(ROW_LOG_TAB);
+      if (!rowSheet || rowSheet.getLastRow() < 2) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, submissions: [] }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var data = rowSheet.getDataRange().getValues();
+      // Headers: Timestamp, Respondent, Question No, Question, Selected Answer, Score, Weight
+      var submissions = [];
+      var current = null;
+
+      for (var i = 1; i < data.length; i++) {
+        var row = data[i];
+        var timestamp   = String(row[0] || "");
+        var respondent  = String(row[1] || "");
+        var questionNo  = String(row[2] || "");
+        var question    = String(row[3] || "");
+        var answer      = String(row[4] || "");
+        var score       = row[5];
+        var weight      = row[6];
+
+        if (question === "TOTALS") {
+          if (current) {
+            current.totalScore = Number(score) || 0;
+            current.totalWeightedScore = Number(weight) || 0;
+            submissions.push(current);
+            current = null;
+          }
+          continue;
+        }
+
+        if (!current ||
+            current.timestamp !== timestamp ||
+            current.respondent !== respondent) {
+          current = {
+            timestamp: timestamp,
+            respondent: respondent,
+            totalScore: 0,
+            totalWeightedScore: 0,
+            questions: []
+          };
+        }
+
+        current.questions.push({
+          number: questionNo,
+          question: question,
+          answer: answer,
+          score: Number(score) || 0,
+          weight: Number(weight) || 0
+        });
+      }
+
+      if (current) submissions.push(current);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, submissions: submissions }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: String(err) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService
     .createTextOutput(JSON.stringify({ status: "Leadership Reset Diagnostic API is live." }))
     .setMimeType(ContentService.MimeType.JSON);

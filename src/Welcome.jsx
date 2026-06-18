@@ -58,9 +58,14 @@ export default function Welcome() {
         </ul>
       </div>
 
-      <button className="begin-btn" onClick={() => navigate("/diagnostic")}>
-        Begin Diagnostic
-      </button>
+      <div className="btn-group">
+        <button className="begin-btn" onClick={() => navigate("/diagnostic")}>
+          Begin Diagnostic
+        </button>
+        <button className="dashboard-btn" onClick={() => navigate("/dashboard")}>
+          View Dashboard
+        </button>
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Welcome from "../Welcome.jsx";
 import Diagnostic from "../Diagnostic.jsx";
+import Dashboard from "../Dashboard.jsx";
 
 const AppRoutes = () => {
   return (
@@ -11,8 +12,10 @@ const AppRoutes = () => {
         <Route path="/" element={<Welcome />} />
 
         {/* Leadership Diagnostic */}
-        <Route
-          path="/diagnostic"   element={<Diagnostic />}   />
+        <Route path="/diagnostic" element={<Diagnostic />} />
+
+        {/* Submissions Dashboard */}
+        <Route path="/dashboard" element={<Dashboard />} />
 
       </Routes>
   );

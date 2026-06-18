@@ -142,9 +142,16 @@ h1 {
 
 
 
+.btn-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .begin-btn {
   border: none;
-  padding: 14px 32px; /* reduced */
+  padding: 14px 32px;
   font-size: 18px;
   font-weight: 700;
   border-radius: 10px;
@@ -158,6 +165,26 @@ h1 {
 .begin-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 0 30px rgba(37,99,235,0.7);
+}
+
+.dashboard-btn {
+  border: none;
+  padding: 14px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f59e0b, #2563eb);
+  backdrop-filter: blur(6px);
+  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+  box-shadow: 0 0 16px rgba(255,255,255,0.2);
+}
+.dashboard-btn:hover {
+ 
+  transform: translateY(-2px);
+  box-shadow: 0 0 26px rgba(255,255,255,0.35);
 }
 
 @keyframes fadeIn {
