@@ -532,7 +532,6 @@
 //   },
 // };
 
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Diagnostic.css";
@@ -554,6 +553,7 @@ function Diagnostic() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     fetch(`${LOCAL_API}/api/questions`)
@@ -633,7 +633,8 @@ function Diagnostic() {
 
       if (success) {
         setMessage({ type: "success", text: "Saved to Google Sheet!" });
-        setTimeout(() => navigate("/"), 4000);
+        setShowSummary(true);
+        setTimeout(() => navigate("/"), 10000);
       } else {
         setMessage({ type: "error", text: text || "Save failed." });
       }
@@ -644,6 +645,29 @@ function Diagnostic() {
     }
   };
 
+  if (showSummary) {
+    return (
+      <div className="summary-page">
+        <div className="summary-card">
+          {/* <div className="summary-icon">✓</div> */}
+          <h2>Hello <strong>{respondent}!</strong></h2>
+          <p>Thank you for completing the Leadership Diagnostic.</p>
+          <div className="summary-scores ">
+            <div className="summary-box highlight">
+              <span>Score:</span>
+              <strong>{totalScore}</strong>
+            </div>
+            <div className="summary-box highlight">
+              <span>Weighted Score:</span>
+              <strong>{totalWeightedScore}</strong>
+            </div>
+          </div>
+          <p className="redirect">Returning to Welcome Page...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="diagnostic-page">
       <div className="glass-card fade-in">
@@ -653,17 +677,17 @@ function Diagnostic() {
           Reflect on your leadership style during high-stakes decisions.
         </p>
 
-        {/* Application-level summary */}
+        {/* Application-level summary bar */}
         <div className="summary-bar">
-          <div className="summary-chip">
+          <div className="summary-chip highlight">
             <span>Answered</span>
             <strong>{answeredCount} / {questions.length}</strong>
           </div>
-          <div className="summary-chip">
+          <div className="summary-chip highlight">
             <span>Total Score</span>
             <strong>{totalScore}</strong>
           </div>
-          <div className="summary-chip">
+          <div className="summary-chip highlight">
             <span>Total Weight</span>
             <strong>{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</strong>
           </div>
@@ -674,13 +698,9 @@ function Diagnostic() {
         </div>
 
         <div className="respondent-box">
-          <label>Respondent</label>
-          <input
-            type="text"
-            placeholder="e.g. Jane Smith"
-            value={respondent}
-            onChange={(e) => setRespondent(e.target.value)}
-          />
+          <label>Respondent</label><br/>
+          <input  type="text" placeholder="e.g. Jane Smith" value= {respondent}
+            onChange={(e) => setRespondent(e.target.value)}   />
         </div>
 
         {loading && <p>Loading questions...</p>}
@@ -722,8 +742,8 @@ function Diagnostic() {
           </div>
         )}
 
-        <button  className="cta-btn"  onClick={handleSubmit}   disabled={saving} >
-          {saving ? "Saving..." : "Save to Google Sheet"}
+        <button className="cta-btn" onClick={handleSubmit} disabled={saving}      >
+          {saving ? "Saving..." : "Publish Data"}
         </button>
 
         {message && (
