@@ -472,7 +472,7 @@
 //     border: "1px solid #f4c3c3",
 //   },
 
-  
+
 // };
 // const summaryStyles = {
 //   page: {
@@ -698,9 +698,9 @@ function Diagnostic() {
         </div>
 
         <div className="respondent-box">
-          <label>Respondent</label><br/>
-          <input  type="text" placeholder="e.g. Jane Smith" value= {respondent}
-            onChange={(e) => setRespondent(e.target.value)}   />
+          <label>Respondent</label><br />
+          <input type="text" placeholder="e.g. Jane Smith" value={respondent}
+            onChange={(e) => setRespondent(e.target.value)} />
         </div>
 
         {loading && <p>Loading questions...</p>}
@@ -708,34 +708,21 @@ function Diagnostic() {
         {!loading && (
           <div className="questions-grid">
             {questionMetrics.map((q) => (
+
               <div key={q.rowIndex} className="question-card">
-                <p>
-                  <strong>{q.number}.</strong> {q.question}
-                </p>
-                <select
-                  value={q.selectedAnswer}
-                  onChange={(e) =>
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [q.rowIndex]: e.target.value,
-                    }))
-                  }
-                >
+                <p>  <strong>{q.number}.</strong> {q.question} </p>
+
+                <select value={q.selectedAnswer}  onChange={(e) => setAnswers((prev) => ({...prev, [q.rowIndex]: e.target.value,})) }  >
                   <option value="">-- Select an answer --</option>
                   {q.options.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
+                    <option key={opt} value={opt}> {opt} </option>
                   ))}
                 </select>
 
-                {/* Per-question metrics */}
                 <div className="metric-row">
                   <span className="metric-chip">Score: {q.score}</span>
                   <span className="metric-chip">Weight: {q.weight}</span>
-                  <span className="metric-chip strong">
-                    Weighted: {q.weightedScore}
-                  </span>
+                  <span className="metric-chip strong">Weighted: {q.weightedScore}</span>
                 </div>
               </div>
             ))}

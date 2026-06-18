@@ -104,14 +104,14 @@ h1 {
   margin-bottom: 30px;
 }
 
-.question-card {
+/* .question-card {
   background: rgba(255, 255, 255, 0.25);
   border-radius: 16px;
   padding: 20px;
   color: #0f172a;
   transition: 0.3s;
   border: #a0522d 1px solid;
-}
+} */
 
 .question-card:hover {
   transform: translateY(-3px);
@@ -128,7 +128,7 @@ select {
 
 /* Per-question metrics */
 .metric-row {
-  margin-top: 12px;
+  margin-top: 30px;
   display: flex;
   gap: 10px;
 }
@@ -253,6 +253,34 @@ select {
   font-size: 16px;
   color: #f1f5f9;
 }
+
+
+/* Ensure all question cards have equal height and aligned content */
+.question-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  color: #0f172a;
+  transition: 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* pushes dropdown + metrics to bottom */
+  min-height: 220px; /* enforce consistent card height */
+}
+
+.question-card p {
+  flex-grow: 1; /* question text takes available space */
+  margin-bottom: 5px;
+}
+
+.question-card select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  margin-top: auto; /* ensures dropdown sits at same baseline */
+}
+
 
 
 
