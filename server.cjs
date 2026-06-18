@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const FILE_PATH = "C:\\Users\\siree\\Documents\\Leadership_Reset_Diagnostic_NR.xlsx";
+const FILE_PATH = "Leadership_Reset_Diagnostic_NR.xlsx";
 const SHEET_NAME = "Diagnostic";
 const SCORE_SHEET_NAME = "Scores";
 

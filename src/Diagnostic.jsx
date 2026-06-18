@@ -722,11 +722,7 @@ function Diagnostic() {
           </div>
         )}
 
-        <button
-          className="cta-btn"
-          onClick={handleSubmit}
-          disabled={saving}
-        >
+        <button  className="cta-btn"  onClick={handleSubmit}   disabled={saving} >
           {saving ? "Saving..." : "Save to Google Sheet"}
         </button>
 
