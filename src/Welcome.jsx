@@ -52,19 +52,15 @@ export default function Welcome() {
       <div className="info-box">
         <h4>After Completion</h4>
         <ul>
-          <li>Save the completed diagnostic to Google Docs</li>
+          <li>Click on the button to save the completed diagnostic to GoogleSheet</li>
           <li>Email the completed file to Lorraine@Leanin-Coaching.com</li>
           <li>Your results will be discussed during your next coaching session</li>
         </ul>
       </div>
 
       <div className="btn-group">
-        <button className="begin-btn" onClick={() => navigate("/diagnostic")}>
-          Begin Diagnostic
-        </button>
-        <button className="dashboard-btn" onClick={() => navigate("/dashboard")}>
-          View Dashboard
-        </button>
+        <button className="begin-btn" onClick={() => navigate("/diagnostic")}> Begin Diagnostic  </button>
+        <button className="dashboard-btn" onClick={() => navigate("/dashboard")}>  View Dashboard  </button>
       </div>
     </div>
   );

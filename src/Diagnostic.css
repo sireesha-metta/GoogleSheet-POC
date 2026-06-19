@@ -128,7 +128,7 @@ select {
 
 /* Per-question metrics */
 .metric-row {
-  margin-top: 30px;
+  margin-top: 20px;
   display: flex;
   gap: 10px;
 }
@@ -265,12 +265,12 @@ select {
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* pushes dropdown + metrics to bottom */
-  min-height: 220px; /* enforce consistent card height */
+  min-height: 200px; /* enforce consistent card height */
 }
 
 .question-card p {
   flex-grow: 1; /* question text takes available space */
-  margin-bottom: 5px;
+  margin-bottom: 2px;
 }
 
 .question-card select {

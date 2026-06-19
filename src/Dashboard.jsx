@@ -461,7 +461,7 @@ const s = {
     background: "linear-gradient(120deg, #1f2d3f 0%, #294a67 100%)",
     color: "#fff",
     padding: "9px 13px",
-    textAlign: "left",
+    textAlign: "center",
     fontWeight: 600,
     fontSize: 12,
     whiteSpace: "nowrap",
