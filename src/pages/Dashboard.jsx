@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-
-const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbytHuWxCiTwSTM-1gbpt2UgWzGXWDhZD-QqllAyC6Tcy_xxrdD--Kk2QBjYGcXbubfY/exec";
+import { authFetch } from "../utils/auth";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
+
 
 function formatDate(raw) {
   if (!raw) return "—";
@@ -41,7 +40,7 @@ export default function Dashboard() {
   const [sortOrder, setSortOrder]     = useState("desc");
 
   useEffect(() => {
-    fetch(`${GOOGLE_SCRIPT_URL}?action=getSubmissions`)
+    authFetch("/api/submissions")
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {

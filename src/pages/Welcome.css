@@ -2,6 +2,7 @@
 
 .leadership-page {
   min-height: 100vh;
+  position: relative;
   background:
     linear-gradient(135deg, rgba(15,23,42,0.25), rgba(30,41,59,0.25)),
     url("/src/assets/mountain.jpg") center/cover no-repeat;
@@ -15,6 +16,26 @@
   text-align: center;
   animation: fadeIn 1s ease-in-out;
   font-family: 'Lato', sans-serif;
+}
+
+.logout-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
 }
 
 .brand {
@@ -38,12 +59,10 @@ h1 {
   margin-bottom: 18px;
 }
 
-.subtitle {
-  font-size: 15px;
-  font-weight: 400;
-  color: #dadddf;
-  line-height: 1.6;
-  margin-bottom: 26px;
+.section1 {
+  margin-bottom: 14px; /* reduced */
+  max-width: 800px; /* narrower */
+  color: rgb(0, 0, 0);
 }
 
 .section {

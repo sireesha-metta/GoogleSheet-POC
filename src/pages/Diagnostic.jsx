@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Diagnostic.css";
-
-const LOCAL_API = "http://localhost:3001";
-const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbytHuWxCiTwSTM-1gbpt2UgWzGXWDhZD-QqllAyC6Tcy_xxrdD--Kk2QBjYGcXbubfY/exec";
+import { authFetch } from "../utils/auth";
 
 function toNumber(value) {
   const n = Number(value);
@@ -22,7 +19,10 @@ function Diagnostic() {
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    fetch(`${LOCAL_API}/api/questions`).then((r) => r.json()) .then((data) => { setQuestions(data);
+    authFetch("/api/questions")
+      .then((r) => r.json())
+      .then((data) => {
+        setQuestions(data);
         const initial = {};
         data.forEach((q) => {
           if (q.answer) initial[q.rowIndex] = q.answer;
@@ -84,8 +84,11 @@ function Diagnostic() {
         })),
       };
 
-      const res = await fetch(GOOGLE_SCRIPT_URL, {
+      const res = await authFetch("/api/submit", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
@@ -97,7 +100,7 @@ function Diagnostic() {
       if (success) {
         setMessage({ type: "success", text: "Saved to Google Sheet!" });
         setShowSummary(true);
-        setTimeout(() => navigate("/"), 8000);
+        setTimeout(() => navigate("/welcome"), 8000);
       } else {
         setMessage({ type: "error", text: text || "Save failed." });
       }
