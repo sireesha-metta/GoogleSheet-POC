@@ -26,18 +26,13 @@ const AppRoutes = () => {
 
         <Route path="/" element={<RootRedirect />} />
 
-        {/* Login Screen */}
         <Route path="/login" element={<Login />} />
 
-        {/* Welcome Screen */}
-        <Route  path="/welcome" element={ <ProtectedRoute>     <Welcome />   </ProtectedRoute>    }     />
+        <Route path="/welcome" element={ <ProtectedRoute> <Welcome />  </ProtectedRoute>    }   />
 
-        {/* Leadership Diagnostic */}
-        <Route  path="/diagnostic" element={ <ProtectedRoute> <Diagnostic /> </ProtectedRoute>    }     />
+        <Route path="/diagnostic" element={ <ProtectedRoute> <Diagnostic /> </ProtectedRoute> }  />
 
-        {/* Submissions Dashboard */}
-        <Route
-          path="/dashboard"  element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>   }     />
+        <Route path="/dashboard"  element={<ProtectedRoute> <Dashboard /> </ProtectedRoute> } />
 
         <Route path="*" element={<RootRedirect />} />
 

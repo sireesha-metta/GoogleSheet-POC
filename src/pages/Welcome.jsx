@@ -64,6 +64,17 @@ export default function Welcome() {
       </div>
     </header>
 
+    <header className="w-full bg-gradient-to-r from-blue-900 to-blue-700 text-white flex justify-between items-center px-6 py-3 shadow-md">
+  <div className="font-bold text-lg">LEAN IN COACHING</div>
+  <nav className="flex gap-6">
+    <button onClick={() => navigate("/welcome")} className="hover:text-yellow-400">Home</button>
+    <button onClick={() => navigate("/diagnostic")} className="hover:text-yellow-400">Diagnostic</button>
+    <button onClick={() => navigate("/dashboard")} className="hover:text-yellow-400">Dashboard</button>
+    <button onClick={handleLogout} className="hover:text-yellow-400">Logout</button>
+  </nav>
+</header>
+
+
     {/* Main Content */}
     <div className="max-w-6xl mx-auto px-6 py-10">
 

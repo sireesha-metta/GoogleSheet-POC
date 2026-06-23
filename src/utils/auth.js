@@ -63,15 +63,37 @@ export async function loginUser({ email, password, rememberMe = false }) {
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
 
-    return {
-      success: true,
-      session,
-    };
+    return { success: true, session, message: "Login successful." };
   } catch {
-    return {
-      success: false,
-      message: "Unable to reach backend server.",
-    };
+
+    return { success: false, message: "Unable to reach backend server.", };
+  }
+}
+
+export async function registerUser(registerForm) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(registerForm),
+      }
+    );
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        message: data?.message || "Registration failed",
+      };
+    }
+
+    return {success: true, data, message: "Registration successful."};
+  } catch (error) {
+    return {success: false, message: "Unable to reach backend server", };
   }
 }
 
