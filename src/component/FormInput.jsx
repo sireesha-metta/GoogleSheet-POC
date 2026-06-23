@@ -6,6 +6,11 @@ export default function FormInput({
   ...props
 }) {
   const isValid = value?.trim() && !error;
+  const autofillOverride = {
+    WebkitBoxShadow: "0 0 0 1000px rgba(15, 23, 42, 0.92) inset",
+    WebkitTextFillColor: "#f8fafc",
+  };
+
   return (
     <div className="relative">
       <input
@@ -15,12 +20,13 @@ export default function FormInput({
             ? error
             : props.placeholder
         }
-        className={`w-full rounded-2xl border bg-[rgba(19,41,82,0.62)] py-4 pl-12 pr-12 text-xl text-white placeholder:text-slate-200/90
+        style={autofillOverride}
+        className={`w-full rounded-2xl border bg-slate-900/90 py-4 pl-12 pr-16 text-base text-white placeholder:text-slate-400 transition duration-150 ease-in-out
         focus:outline-none focus:ring-2
         ${
           error
-            ? "border-red-500 placeholder-red-300/90 focus:ring-red-500"
-            : "border-slate-300/50 focus:border-yellow-300/60 focus:ring-yellow-300/60"
+            ? "border-red-500 placeholder-red-300/90 focus:border-red-500 focus:ring-red-500/20"
+            : "border-slate-700/80 focus:border-yellow-300/80 focus:ring-yellow-300/20"
         }`}
       />
 

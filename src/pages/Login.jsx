@@ -174,16 +174,20 @@ export default function Login() {
         <div className="w-full md:max-w-[500px]">
           <div className="rounded-[32px] border border-yellow-300/60 
               bg-gradient-to-br from-[#1c1c1c]/95 via-[#243b55]/90 to-[#141e30]/95 
-              p-6 shadow-2xl backdrop-blur-md md:p-4">
-            <h1 className="text-center font-serif text-2xl text-white md:text-2xl">
-              Login <span className="text-yellow-200">Here</span>
-            </h1>
-
-            <div className="mx-auto mt-4 h-px w-56 bg-gradient-to-r from-transparent via-yellow-300/80 to-transparent" />
-
-            <h3 className="mt-4 text-center text-md text-slate-100/95 md:text-lg italic">
-              Access your Leadership Assessment account
-            </h3>
+              p-6 shadow-2xl backdrop-blur-md md:p-8">
+            <div className="text-center">
+              <h1 className="font-serif text-3xl font-semibold text-white md:text-4xl">
+                Login
+              </h1>
+              
+            <div className="mt-7 border-t border-white/20 pt-5 text-center">
+              
+              <p className="mt-3 text-lg italic text-white/80">
+               Access Your Leadership Assessment Account
+              </p>
+             
+            </div>
+            </div>
 
             <form onSubmit={onSubmit} className="mt-8 space-y-5">
               <div className="relative">
@@ -192,7 +196,7 @@ export default function Login() {
                 <FormInput
                   type="email"
                   value={email}
-                  placeholder="Email"
+                  placeholder="Email / Phone number"
                   error={errors.email}
                   showErrorInPlaceholder={true}
                   onChange={(e) => {
@@ -226,7 +230,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-white/95"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/95"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-6 w-6" />
@@ -236,49 +240,42 @@ export default function Login() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 text-sm md:text-base">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/60 bg-transparent text-blue-500 accent-blue-500"
-                />
+              <div className="mt-4 flex flex-col gap-4 text-sm md:text-base">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegister(true)}
+                    className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
+                  >
+                    Register
+                  </button>
 
-                <span className="text-slate-100">Keep me signed in</span>
+                  <button
+                    type="button"
+                    className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
 
                 <button
-                  type="button"
-                  className="ml-auto text-yellow-300 transition hover:text-yellow-200"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mx-auto block w-full max-w-[260px] rounded-2xl bg-yellow-500 px-6 py-3 text-center text-base font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Forgot Password?
+                  {isSubmitting ? "Signing in..." : "Login"}
                 </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-2 block w-full rounded-xl bg-gradient-to-b from-yellow-300 to-yellow-500 py-3 text-center text-3xl font-semibold text-slate-900 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70 md:text-4xl"
-              >
-                {isSubmitting ? "Signing in..." : "Start Assessment"}
-              </button>
             </form>
 
-            <div className="mt-7 border-t border-white/30 pt-5">
-              <p className="text-center text-lg text-slate-100 md:text-xl">
-                Don't Have an Account?{" "}
-                <button
-                  type="button"
-                  onClick={() => setShowRegister(true)}
-                  className="font-semibold text-yellow-300 underline transition hover:text-yellow-200"
-                >
-                  Register Here
-                </button>
-              </p>
-
-              <p className="mt-4 text-center font-serif text-2xl italic text-white/90 md:text-3xl">
+            <div className="mt-7 border-t border-white/20 pt-5 text-center">
+              
+              <p className="mt-3 text-lg italic text-white/80">
                 Unlock Your Leadership Potential
               </p>
+             
             </div>
+
           </div>
         </div>
       </div>
@@ -328,7 +325,7 @@ export default function Login() {
                   onChange={handleRegisterChange} error={registerErrors.password} showErrorInPlaceholder={true} />
 
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 right-10 text-white" >
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/95" >
                   {showPassword ? (<EyeSlashIcon className="h-6 w-6" />) : (<EyeIcon className="h-6 w-6" />)}
                 </button>
               </div>
