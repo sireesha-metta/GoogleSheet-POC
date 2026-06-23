@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { authFetch } from "../utils/auth";
+import AuthHeader from "../component/AuthHeader.jsx";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
 
@@ -124,6 +125,9 @@ export default function Dashboard() {
   return (
     <main style={s.page}>
       <div style={s.shell}>
+        <div style={s.pageHeader}>
+          <AuthHeader />
+        </div>
         {/* ── Header ── */}
         <header style={s.header}>
           <button style={s.backBtn} onClick={() => navigate("/")}>← Back</button>
@@ -333,6 +337,9 @@ const s = {
     background: "linear-gradient(140deg, #f3efe6 0%, #e5edf7 100%)",
     padding: 20,
     fontFamily: "'Trebuchet MS', 'Segoe UI', sans-serif",
+  },
+  pageHeader: {
+    padding: 24,
   },
   shell: {
     maxWidth: 1060,

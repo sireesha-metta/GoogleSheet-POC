@@ -4,6 +4,7 @@ import Login from "../pages/Login.jsx";
 import Welcome from "../pages/Welcome.jsx";
 import Diagnostic from "../pages/Diagnostic.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
+import Profile from "../pages/Profile.jsx";
 import { isAuthenticated } from "../utils/auth";
 
 function ProtectedRoute({ children }) {
@@ -31,6 +32,8 @@ const AppRoutes = () => {
         <Route path="/welcome" element={ <ProtectedRoute> <Welcome />  </ProtectedRoute>    }   />
 
         <Route path="/diagnostic" element={ <ProtectedRoute> <Diagnostic /> </ProtectedRoute> }  />
+
+        <Route path="/profile" element={ <ProtectedRoute> <Profile /> </ProtectedRoute> } />
 
         <Route path="/dashboard"  element={<ProtectedRoute> <Dashboard /> </ProtectedRoute> } />
 

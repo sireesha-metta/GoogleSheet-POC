@@ -31,7 +31,10 @@ const GOOGLE_SCRIPT_URL =
 
 const ADMIN_EMAIL =
   (process.env.ADMIN_EMAIL || "admin@leanin-coaching.com").trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
+const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Admin";
+const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "User";
+const ADMIN_MOBILE = process.env.ADMIN_MOBILE || "9876543210";
+let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
 const TOKEN_TTL_MS = Number(process.env.TOKEN_TTL_MS || 8 * 60 * 60 * 1000);
 const REMEMBER_TOKEN_TTL_MS = Number(
   process.env.REMEMBER_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000
@@ -190,6 +193,9 @@ app.post("/api/auth/login", (req, res) => {
 
   sessions.set(token, {
     email: ADMIN_EMAIL,
+    firstName: ADMIN_FIRST_NAME,
+    lastName: ADMIN_LAST_NAME,
+    mobile: ADMIN_MOBILE,
     expiresAt,
   });
 
@@ -199,6 +205,9 @@ app.post("/api/auth/login", (req, res) => {
       token,
       user: {
         email: ADMIN_EMAIL,
+        firstName: ADMIN_FIRST_NAME,
+        lastName: ADMIN_LAST_NAME,
+        mobile: ADMIN_MOBILE,
       },
       expiresAt,
     },
@@ -210,6 +219,9 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
     success: true,
     data: {
       email: req.auth.email,
+      firstName: req.auth.firstName,
+      lastName: req.auth.lastName,
+      mobile: req.auth.mobile,
     },
   });
 });
@@ -217,6 +229,31 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
 app.post("/api/auth/logout", requireAuth, (req, res) => {
   sessions.delete(req.auth.token);
   res.json({ success: true });
+});
+
+// POST /api/auth/change-password — change admin password (simple demo: requires auth)
+app.post("/api/auth/change-password", requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: "Current and new password are required." });
+  }
+
+  if (String(currentPassword) !== String(ADMIN_PASSWORD)) {
+    return res.status(403).json({ success: false, message: "Current password is incorrect." });
+  }
+
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ success: false, message: "New password must be at least 8 characters." });
+  }
+
+  // basic complexity check
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(String(newPassword))) {
+    return res.status(400).json({ success: false, message: "Password must contain uppercase, lowercase and number." });
+  }
+
+  ADMIN_PASSWORD = String(newPassword);
+  return res.json({ success: true, message: "Password updated (in-memory)." });
 });
 
 // GET /api/questions — returns all questions with current answers

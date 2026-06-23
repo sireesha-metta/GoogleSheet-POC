@@ -1,10 +1,12 @@
+import { forwardRef } from "react";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 
-export default function FormInput({
-  error,value,
+const FormInput = forwardRef(function FormInput({
+  error,
+  value,
   showErrorInPlaceholder = false,
   ...props
-}) {
+}, ref) {
   const isValid = value?.trim() && !error;
   const autofillOverride = {
     WebkitBoxShadow: "0 0 0 1000px rgba(15, 23, 42, 0.92) inset",
@@ -14,6 +16,7 @@ export default function FormInput({
   return (
     <div className="relative">
       <input
+        ref={ref}
         {...props}
         placeholder={
           showErrorInPlaceholder && error
@@ -45,4 +48,6 @@ export default function FormInput({
       )}
     </div>
   );
-}
+});
+
+export default FormInput;

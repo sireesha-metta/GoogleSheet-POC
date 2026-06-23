@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getQuestions, submitDiagnostic } from "../utils/auth";
+import AuthHeader from "../component/AuthHeader.jsx";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -166,170 +167,172 @@ function Diagnostic() {
 
   if (showSummary) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
-        <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8 flex items-center justify-center">
-          <div className="w-full max-w-2xl bg-blue-400 rounded-3xl shadow-xl p-8 text-center">
-
-            <div className="flex justify-center mb-6">
-              <div className="h-20 w-20 rounded-full bg-yellow-100 flex items-center justify-center shadow-lg">
+      <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+        <div className="relative z-10 mx-auto max-w-4xl px-4 py-16">
+          <AuthHeader />
+          <div className="rounded-[32px] border border-yellow-400/20 bg-slate-900/95 p-10 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-6 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-500/15 text-yellow-300 shadow-lg shadow-yellow-500/20">
                 <span className="text-4xl">✓</span>
               </div>
+              <h2 className="text-4xl font-serif font-semibold text-white">
+                Thank you, {respondent || 'Leader'}
+              </h2>
+              <p className="max-w-2xl text-slate-300 text-lg">
+                Your Leadership Diagnostic has been recorded successfully. You will be redirected to the welcome screen shortly.
+              </p>
             </div>
 
-            <h2 className="text-3xl font-bold text-[#001B57] mb-2">
-              Hello <span className="text-yellow-700">{respondent}!</span>
-            </h2>
-
-            <p className="text-gray-700 text-lg mb-8">
-              Thank you for completing the Leadership Diagnostic.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-
-              <div className="bg-blue-50 rounded-2xl p-6 shadow-md">
-                <p className="text-sm text-gray-600 mb-2 font-semibold">Total Score</p>
-
-                <h3 className="text-4xl font-bold text-[#001B57]">{totalScore} </h3>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/10">
+                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Total Score</p>
+                <h3 className="mt-4 text-5xl font-semibold text-white">{totalScore}</h3>
               </div>
-
-              <div className="bg-yellow-50 rounded-2xl p-6 shadow-md">
-                <p className="text-sm text-gray-600 mb-2 font-semibold">Weighted Score </p>
-
-                <h3 className="text-4xl font-bold text-yellow-700">{totalWeightedScore} </h3>
+              <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/10">
+                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Weighted Score</p>
+                <h3 className="mt-4 text-5xl font-semibold text-yellow-300">{totalWeightedScore}</h3>
               </div>
-
             </div>
 
-            <div className="bg-green-100 border-2 border-green-400 rounded-2xl p-5 mb-6">
-              <p className="text-green-800 font-semibold text-lg"> ✓ Data saved successfully! </p>
-              <p className="text-green-700 text-sm mt-2"> Redirecting to Welcome Page in 5 seconds...</p>
+            <div className="mt-8 rounded-3xl border border-yellow-400/10 bg-slate-950/85 p-6 text-left shadow-lg shadow-yellow-500/10">
+              <p className="text-slate-300">
+                Redirecting to the welcome page in 5 seconds. If you would like to continue, please wait or return manually.
+              </p>
             </div>
-
           </div>
         </div>
       </div>
-    )}
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
-      <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8">
-        <div className="flex justify-center mb-6">
-          <span className="bg-yellow-100 text-yellow-800 px-8 py-2 rounded-full text-lg font-semibold">
-            LEAN IN COACHING
-          </span>
-        </div>
-        <h1 className="text-4xl font-bold text-center text-[#001B57]">
-          Leadership Reset Diagnostic
-        </h1>
-        <p className="text-center text-gray-700 mt-3 mb-8 text-lg">
-          Reflect on your leadership style during high-stakes decisions.
-        </p>
-
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-
-          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
-            <p className="text-gray-700 text-sm font-semibold">Answered</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
-              {answeredCount}/{questions.length}
-            </h3>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
-            <p className="text-gray-700 text-sm font-semibold">Score</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
-              {totalScore}
-            </h3>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
-            <p className="text-gray-700 text-sm font-semibold">Weight</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
-              {questionMetrics.reduce((sum, q) => sum + q.weight, 0)}
-            </h3>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
-            <p className="text-gray-700 text-sm font-semibold">Weighted</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
-              {totalWeightedScore}
-            </h3>
-          </div>
-
-        </div>
-
-        <div className="bg-blue-400 rounded-2xl shadow-md p-6 mb-8">
-
-          <label className="block text-[#001B57] font-semibold mb-3 text-lg">
-            Respondent Name
-          </label>
-
-          <input type="text" value={respondent} placeholder="Enter respondent name" onChange={(e) => setRespondent(e.target.value)}
-            className=" w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#001B57] text-gray-800"  />
-
-        </div>
-
-        {loading && <p className="text-center text-[#001B57] font-semibold py-8">Loading questions...</p>}
-
-        {!loading && (
-          <div className="bg-blue-400 rounded-2xl shadow-md hover:shadow-lg transition p-6 mb-8">
-            {questionMetrics.map((q) => (
-
-              <div key={q.rowIndex} className="text-[#001B57] font-semibold mb-6 pb-6 border-b border-blue-300 last:border-0 last:pb-0 last:mb-0">
-                <p className="mb-3"><strong>{q.number}.</strong> {q.question} </p>
-
-                <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))} 
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#001B57] text-gray-800 bg-white">
-                  <option value="">-- Select an answer --</option>
-                  {q.options.map((opt) => ( <option key={opt} value={opt}> {opt} </option> ))}
-                </select>
-
-                <div className="flex flex-wrap gap-2 mt-4">
-
-                  <span className="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
-                    Score: {q.score}
-                  </span>
-
-                  <span className="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
-                    Weight: {q.weight}
-                  </span>
-
-                  <span className="bg-yellow-200 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold">
-                    Weighted: {q.weightedScore}
-                  </span>
-                </div>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10">
+        <AuthHeader />
+        <div className="rounded-[32px] border border-yellow-400/20 bg-slate-900/95 p-8 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.28em] text-yellow-300/90">Diagnostic</p>
+                <h1 className="mt-3 text-4xl font-serif font-semibold text-white md:text-5xl">
+                  Leadership Reset Diagnostic
+                </h1>
+                <p className="mt-4 max-w-2xl text-slate-300 text-lg">
+                  Reflect on your leadership choices and capture insights that matter.
+                </p>
               </div>
-            ))}
+              <span className="inline-flex items-center rounded-full border border-yellow-400/25 bg-yellow-500/10 px-5 py-2 text-yellow-200 shadow-sm">
+                LEAN IN COACHING
+              </span>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-3xl border border-yellow-400/30 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Answered</p>
+                <h3 className="mt-4 text-3xl font-semibold text-white">{answeredCount}/{questions.length}</h3>
+              </div>
+              <div className="rounded-3xl border border-yellow-400/30 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score</p>
+                <h3 className="mt-4 text-3xl font-semibold text-white">{totalScore}</h3>
+              </div>
+              <div className="rounded-3xl border border-yellow-400/30 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weight</p>
+                <h3 className="mt-4 text-3xl font-semibold text-white">{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</h3>
+              </div>
+              <div className="rounded-3xl border border-yellow-400/30 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weighted</p>
+                <h3 className="mt-4 text-3xl font-semibold text-yellow-300">{totalWeightedScore}</h3>
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-yellow-400/20 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/10">
+              <label className="block text-sm font-semibold uppercase tracking-[0.2em] text-yellow-300/90 mb-3">
+                Respondent Name
+              </label>
+              <input
+                type="text"
+                value={respondent}
+                placeholder="Enter respondent name"
+                onChange={(e) => setRespondent(e.target.value)}
+                className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-3 text-white placeholder:text-slate-500 shadow-sm outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
+              />
+            </div>
+
+            {loading && (
+              <p className="text-center text-slate-300 font-semibold py-8">
+                Loading questions...
+              </p>
+            )}
+
+            {!loading && (
+              <div className="grid gap-6 md:grid-cols-2">
+                {questionMetrics.map((q) => (
+                  <div key={q.rowIndex} className="rounded-[28px] border border-yellow-400/10 bg-slate-950/85 p-6 shadow-lg shadow-yellow-500/5 transition hover:-translate-y-0.5 hover:shadow-xl">
+                    <div className="flex flex-col gap-4">
+                      <p className="text-lg font-medium text-white">
+                        <span className="font-semibold text-yellow-300">{q.number}.</span> {q.question}
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-sm text-slate-400">
+                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">Score: {q.score}</span>
+                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">Weight: {q.weight}</span>
+                        <span className="rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-yellow-200">Weighted: {q.weightedScore}</span>
+                      </div>
+                    </div>
+
+                    <select
+                      value={q.selectedAnswer}
+                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value }))}
+                      className="mt-4 w-full rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-3 text-white outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
+                    >
+                      <option value="" className="bg-slate-950 text-white">-- Select an answer --</option>
+                      {q.options.map((opt) => (
+                        <option key={opt} value={opt} className="bg-slate-950 text-white">
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-3 mt-8">
+              <button
+                onClick={handleLoadDraft}
+                disabled={saving}
+                className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50"
+              >
+                Load Draft
+              </button>
+              <button
+                onClick={handleSaveDraft}
+                disabled={saving}
+                className="rounded-2xl bg-slate-800 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-slate-700 disabled:opacity-50"
+              >
+                Save Draft
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50"
+              >
+                {saving ? "Publishing..." : "Publish Data"}
+              </button>
+            </div>
+
+            {message && (
+              <div className={`mt-6 rounded-2xl border px-4 py-4 text-center text-sm font-medium ${
+                message.type === "error"
+                  ? "border-red-500/30 bg-red-500/10 text-red-200"
+                  : "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+              }`}>
+                {message.text}
+              </div>
+            )}
           </div>
-        )}
-
-        <div className="grid grid-cols-3 gap-4 mt-8">
-          <button onClick={handleLoadDraft}  disabled={saving}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-4 rounded-2xl 
-            transition shadow-md hover:shadow-lg disabled:opacity-50" >
-            Load Draft
-          </button>
-
-          <button
-            onClick={handleSaveDraft}  disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl 
-            transition shadow-md hover:shadow-lg disabled:opacity-50">
-            Save Draft
-          </button>
-
-          <button onClick={handleSubmit}  disabled={saving}
-            className="bg-[#001B57] hover:bg-[#002c91] text-white font-semibold py-4 rounded-2xl 
-            transition disabled:opacity-50 shadow-lg hover:shadow-xl"  >
-            {saving ? "Publishing..." : "Publish Data"}
-          </button>
         </div>
-
-        {message && (
-          <div className={`mt-6 p-4 rounded-2xl text-center font-medium ${message.type === "error"
-              ? "bg-red-100 text-red-800 border border-red-300"
-              : "bg-green-100 text-green-800 border border-green-300" }`}  >
-            {message.text}
-          </div>
-        )}
       </div>
     </div>
   );

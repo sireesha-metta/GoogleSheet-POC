@@ -27,6 +27,18 @@ export function getAuthToken() {
   return getAuthSession()?.token || null;
 }
 
+export function setAuthSession(session) {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
+export function updateAuthSession(patch) {
+  const session = getAuthSession();
+  if (!session) return null;
+  const updated = { ...session, ...patch };
+  setAuthSession(updated);
+  return updated;
+}
+
 export async function loginUser({ email, password, rememberMe = false }) {
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -50,15 +62,24 @@ export async function loginUser({ email, password, rememberMe = false }) {
       };
     }
 
+    const user = data.data.user || {};
+    const firstName = user.firstname || user.firstName || "";
+    const lastName = user.lastname || user.lastName || "";
+    const fullName = user.name || `${firstName} ${lastName}`.trim() || user.email || "";
+
     const session = {
       token: data.data.token,
-      id: data.data.user?.id,
-      name: data.data.user?.name,
-      email: data.data.user?.email,
-      role: data.data.user?.role,
       expiresAt: data.data.expiresAt,
       rememberMe,
       loggedInAt: new Date().toISOString(),
+      id: user.id,
+      role: user.role,
+      email: user.email,
+      name: fullName,
+      firstName,
+      lastName,
+      mobile: user.mobile || user.phone || user.phoneNumber || "",
+      user,
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
@@ -137,21 +158,36 @@ export async function authFetch(path, options = {}) {
   return response;
 }
 
+export async function fetchAuthProfile() {
+  try {
+    const response = await authFetch("/api/auth/me");
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to fetch profile." };
+    }
+
+    return { success: true, profile: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Unable to fetch profile." };
+  }
+}
+
 // Diagnostic API functions
 export async function getQuestions() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/questions`);
-    
+    const response = await authFetch("/api/questions");
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     if (!Array.isArray(data)) {
       throw new Error("Invalid response format");
     }
-    
+
     return { success: true, data };
   } catch (error) {
     console.error("Error loading questions:", error);
@@ -164,7 +200,7 @@ export async function getQuestions() {
 
 export async function submitDiagnostic(payload) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/submit`, {
+    const response = await authFetch("/api/submit", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -173,9 +209,12 @@ export async function submitDiagnostic(payload) {
     });
 
     const text = await response.text();
+    const normalized = String(text || "").trim().toLowerCase();
     const success =
-      text.toLowerCase().includes("success") ||
-      text.toLowerCase().includes("saved");
+      normalized === "success" ||
+      normalized.includes("success") ||
+      normalized.includes("saved") ||
+      normalized.includes("updated");
 
     if (success) {
       return { success: true, message: "Saved to Google Sheet!" };
@@ -185,5 +224,21 @@ export async function submitDiagnostic(payload) {
   } catch (error) {
     console.error("Error submitting diagnostic:", error);
     return { success: false, message: "Network error." };
+  }
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  try {
+    const response = await authFetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    const data = await response.json().catch(() => null);
+    if (!response.ok) return { success: false, message: data?.message || "Unable to change password" };
+    return { success: true, message: data?.message || "Password changed" };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error" };
   }
 }

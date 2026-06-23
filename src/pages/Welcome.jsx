@@ -1,20 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { getAuthSession, logoutUser } from "../utils/auth";
+import AuthHeader from "../component/AuthHeader.jsx";
 
 
 export default function Welcome() {
-  const user = getAuthSession();
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logoutUser();
-    navigate("/login", { replace: true });
-  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-8">
+        <AuthHeader />
         <div className="rounded-[32px] border border-yellow-400/20 bg-slate-950/95 p-8 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
@@ -27,12 +22,6 @@ export default function Welcome() {
               </p>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-full bg-yellow-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400"
-            >
-              Logout
-            </button>
           </div>
 
           {/* <div className="mt-8 grid gap-6 md:grid-cols-3">
