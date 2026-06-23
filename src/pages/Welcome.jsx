@@ -12,105 +12,86 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
-      <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8">
-        
-        {/* Header with Logout Button */}
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-[#001B57] text-3xl font-semibold">
-            Leadership Assessment Platform
-          </span>
-          <button 
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-semibold transition shadow-md"
-          >
-            Logout
-          </button>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-8">
+        <div className="rounded-[32px] border border-yellow-400/20 bg-slate-950/95 p-8 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.28em] text-yellow-300/90">Welcome back</p>
+              <h1 className="mt-3 text-4xl font-serif font-semibold text-white md:text-5xl">
+                Leadership Assessment
+              </h1>
+              <p className="mt-4 max-w-2xl text-slate-300">
+                Discover your leadership strengths, identify growth opportunities, and guide your team with confidence.
+              </p>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center rounded-full bg-yellow-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400"
+            >
+              Logout
+            </button>
+          </div>
+
+          {/* <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Assessment</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">Leadership Reset</h3>
+              <p className="mt-3 text-slate-400">A concise diagnostic designed to highlight your leadership potential.</p>
+            </div>
+
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Duration</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">10-15 min</h3>
+              <p className="mt-3 text-slate-400">Focused, fast, and relevant for busy leaders.</p>
+            </div>
+
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Questions</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">20+</h3>
+              <p className="mt-3 text-slate-400">Insightful prompts that surface your leadership style.</p>
+            </div>
+          </div> */}
+
+          <div className="mt-10 grid gap-6 md:grid-cols-4">
+            {[
+              { icon: '🧭', title: 'Navigate', description: 'Open the assessment section.' },
+              { icon: '📖', title: 'Read', description: 'Review each question carefully.' },
+              { icon: '✅', title: 'Respond', description: 'Select the answer that fits best.' },
+              { icon: '🎯', title: 'Review', description: 'See your score and next steps.' },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl border border-yellow-400/10 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/5 transition hover:-translate-y-1 hover:border-yellow-300/40 hover:shadow-yellow-500/15">
+                <div className="text-4xl">{item.icon}</div>
+                <h3 className="mt-4 text-lg font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-slate-400">{item.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-yellow-400/25 bg-slate-950/80 p-8 shadow-xl shadow-yellow-500/10">
+            <h2 className="text-2xl font-semibold text-white">After Completion</h2>
+            <ul className="mt-5 space-y-3 text-slate-300">
+              <li>✓ Save the completed diagnostic to Google Sheets</li>
+              <li>✓ Email the completed report to your coach</li>
+              <li>✓ Review results during your next session</li>
+            </ul>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-yellow-400/15 bg-slate-900/80 p-6 text-center shadow-xl shadow-yellow-500/10">
+            <p className="text-sm uppercase tracking-[0.3em] text-yellow-300/80">Your leadership edge</p>
+            <p className="max-w-2xl text-base text-slate-300">
+              Take the next step with a polished assessment experience designed for emerging and established leaders alike.
+            </p>
+            <button
+              onClick={() => navigate("/diagnostic")}
+              className="rounded-full bg-yellow-500 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400"
+            >
+              Start Assessment
+            </button>
+          </div>
         </div>
-
-        <div className="bg-blue-400 rounded-xl shadow-lg p-6 mb-6">
-          <span className="flex justify-center items-center text-[#001B57] px-8 py-2  text-3xl font-semibold w-fit mx-auto">
-            Leadership Assessment Platform
-          </span>
-
-          <h2 className="text-2xl font-bold text-[#001B57] mt-4">
-            Welcome Back, {user?.name || "Leader"}
-          </h2>
-
-          <p className="text-black-600 text-lg mt-4 max-w-3xl">
-            Discover your leadership strengths, identify growth opportunities,
-            and improve your ability to guide teams through high-impact decisions.
-          </p>
-
-          <button onClick={() => navigate("/diagnostic")}
-            className="mt-8 bg-[#001B57] hover:bg-[#002c91] text-white px-8 py-2 rounded-xl font-semibold transition"  >
-            Start Assessment
-          </button>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
-            <p className="text-gray-700 text-sm uppercase">Assessment</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">Leadership Reset </h3>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
-            <p className="text-gray-700 text-sm uppercase">Duration</p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">10-15 Min</h3>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
-            <p className="text-gray-700 text-sm uppercase"> Questions </p>
-            <h3 className="text-2xl font-bold text-[#001B57] mt-2">20+ </h3>
-          </div>
-        </div>
-
-        {/* <h2 className="text-3xl font-bold text-[#001B57] mb-6">
-          Assessment Journey
-        </h2> */}
-
-        <div className="grid md:grid-cols-4 gap-6">
-
-          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
-            <div className="text-4xl mb-4">🧭</div>
-            <h3 className="font-bold text-lg">Navigate</h3>
-            <p className="text-gray-900 mt-2"> Open the assessment section.</p>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
-            <div className="text-4xl mb-4">📖</div>
-            <h3 className="font-bold text-lg">Read</h3>
-            <p className="text-gray-900 mt-2">Review every question carefully.</p>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
-            <div className="text-4xl mb-4">✅</div>
-            <h3 className="font-bold text-lg">Respond</h3>
-            <p className="text-gray-900 mt-2">Select the best response.</p>
-          </div>
-
-          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="font-bold text-lg">Review</h3>
-            <p className="text-gray-900 mt-2"> View your assessment score. </p>
-          </div>
-
-        </div>
-
-        <div className="mt-10 bg-blue-400 rounded-2xl shadow-md p-8 border-l-4 border-yellow-500 text-center">
-
-          <h2 className="text-2xl font-bold text-[#001B57] mb-4">
-            After Completion
-          </h2>
-
-          <ul className="space-y-3 text-gray-900">
-            <li>✓ Save the completed diagnostic to Google Sheets</li>
-            <li>✓ Email the completed report to Lorraine</li>
-            <li>✓ Review results during the next coaching session</li>
-          </ul>
-
-        </div>
-
       </div>
     </div>
   );
