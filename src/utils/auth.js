@@ -136,3 +136,54 @@ export async function authFetch(path, options = {}) {
 
   return response;
 }
+
+// Diagnostic API functions
+export async function getQuestions() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/questions`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid response format");
+    }
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error loading questions:", error);
+    return {
+      success: false,
+      error: error.message || "Could not load questions. Please try again."
+    };
+  }
+}
+
+export async function submitDiagnostic(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    const success =
+      text.toLowerCase().includes("success") ||
+      text.toLowerCase().includes("saved");
+
+    if (success) {
+      return { success: true, message: "Saved to Google Sheet!" };
+    } else {
+      return { success: false, message: text || "Save failed." };
+    }
+  } catch (error) {
+    console.error("Error submitting diagnostic:", error);
+    return { success: false, message: "Network error." };
+  }
+}

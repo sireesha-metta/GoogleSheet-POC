@@ -1,15 +1,32 @@
 import { useNavigate } from "react-router-dom";
-import { getAuthSession } from "../utils/auth";
-import Diagnostic from "./Diagnostic.jsx";
+import { getAuthSession, logoutUser } from "../utils/auth";
 
 
 export default function Welcome() {
   const user = getAuthSession();
   const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
       <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8">
+        
+        {/* Header with Logout Button */}
+        <div className="flex justify-between items-center mb-6">
+          <span className="text-[#001B57] text-3xl font-semibold">
+            Leadership Assessment Platform
+          </span>
+          <button 
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-semibold transition shadow-md"
+          >
+            Logout
+          </button>
+        </div>
 
         <div className="bg-blue-400 rounded-xl shadow-lg p-6 mb-6">
           <span className="flex justify-center items-center text-[#001B57] px-8 py-2  text-3xl font-semibold w-fit mx-auto">

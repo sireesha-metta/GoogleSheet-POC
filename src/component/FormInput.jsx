@@ -15,12 +15,12 @@ export default function FormInput({
             ? error
             : props.placeholder
         }
-        className={`w-full bg-[#405181] rounded-xl py-4 px-10  text-white
+        className={`w-full rounded-2xl border bg-[rgba(19,41,82,0.62)] py-4 pl-12 pr-12 text-xl text-white placeholder:text-slate-200/90
         focus:outline-none focus:ring-2
         ${
           error
-            ? "border-2 border-red-500 placeholder-red-400 focus:ring-red-500"
-            : "border border-gray-400 placeholder-gray-200 focus:ring-yellow-400"
+            ? "border-red-500 placeholder-red-300/90 focus:ring-red-500"
+            : "border-slate-300/50 focus:border-yellow-300/60 focus:ring-yellow-300/60"
         }`}
       />
 

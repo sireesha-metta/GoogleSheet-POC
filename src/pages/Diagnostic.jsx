@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { authFetch } from "../utils/auth";
+import { getQuestions, submitDiagnostic } from "../utils/auth";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function toNumber(value) {
   const n = Number(value);
@@ -18,28 +20,34 @@ function Diagnostic() {
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-
-    console.log("Session:", localStorage.getItem("gspoc_auth_session"));
-    authFetch("/api/questions")
-      .then((r) => r.json())
-      .then((data) => {
-        setQuestions(data);
+    // Load questions using utility function
+    getQuestions().then((result) => {
+      if (result.success) {
+        setQuestions(result.data);
         const initial = {};
-        data.forEach((q) => {
+        result.data.forEach((q) => {
           if (q.answer) initial[q.rowIndex] = q.answer;
         });
         setAnswers(initial);
-        setLoading(false);
-      })
-      .catch(() => {
-        setMessage({ type: "error", text: "Could not load questions." });
-        setLoading(false);
-      });
+      } else {
+        setMessage({ type: "error", text: result.error });
+      }
+      setLoading(false);
+    });
   }, []);
 
+
+  useEffect(() => {
+    if (showSummary) {
+      const timer = setTimeout(() => {
+        navigate("/welcome");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSummary, navigate]);
+
   const answeredCount = questions.filter(
-    (q) => (answers[q.rowIndex] || "").trim() !== ""
-  ).length;
+    (q) => (answers[q.rowIndex] || "").trim() !== "").length;
 
   const questionMetrics = questions.map((q) => {
     const selectedAnswer = answers[q.rowIndex] || "";
@@ -67,77 +75,144 @@ function Diagnostic() {
     setSaving(true);
     setMessage(null);
 
-    try {
-      const payload = {
-        respondent: respondent.trim() || "Anonymous",
-        submittedAt: new Date().toISOString(),
-        totalScore,
-        totalWeightedScore,
-        answersByRow: answers,
-        questionResponses: questionMetrics.map((q) => ({
-          rowIndex: q.rowIndex,
-          number: q.number,
-          question: q.question,
-          answer: q.selectedAnswer,
-          score: q.score,
-          weight: q.weight,
-          weightedScore: q.weightedScore,
-        })),
-      };
+    const payload = {
+      respondent: respondent.trim() || "Anonymous",
+      submittedAt: new Date().toISOString(),
+      totalScore,
+      totalWeightedScore,
+      answersByRow: answers,
+      questionResponses: questionMetrics.map((q) => ({
+        rowIndex: q.rowIndex,
+        number: q.number,
+        question: q.question,
+        answer: q.selectedAnswer,
+        score: q.score,
+        weight: q.weight,
+        weightedScore: q.weightedScore,
+      })),
+    };
 
-      const res = await authFetch("/api/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+    const result = await submitDiagnostic(payload);
+
+    if (result.success) {
+      setMessage({ type: "success", text: result.message });
+      setShowSummary(true);
+    } else {
+      setMessage({ type: "error", text: result.message });
+    }
+
+    setSaving(false);
+  };
+
+  const handleSaveDraft = () => {
+    // Validate respondent name
+    if (!respondent.trim()) {
+      setMessage({
+        type: "error",
+        text: "Please enter your name to save draft.",
       });
+      return;
+    }
 
-      const text = await res.text();
-      const success =
-        text.toLowerCase().includes("success") ||
-        text.toLowerCase().includes("saved");
+    // Validate at least one answer
+    if (Object.keys(answers).length === 0) {
+      setMessage({
+        type: "error",
+        text: "Please answer at least one question to save draft.",
+      });
+      return;
+    }
 
-      if (success) {
-        setMessage({ type: "success", text: "Saved to Google Sheet!" });
-        setShowSummary(true);
-        // setTimeout(() => navigate("/welcome"), 8000);
-      } else {
-        setMessage({ type: "error", text: text || "Save failed." });
+    // Save draft to localStorage
+    const draftData = {
+      respondent: respondent.trim(),
+      answers: answers,
+      savedAt: new Date().toISOString(),
+      answeredCount: answeredCount,
+      totalQuestions: questions.length,
+    };
+
+    localStorage.setItem("diagnostic_draft", JSON.stringify(draftData));
+    setMessage({
+      type: "success",
+      text: `Draft saved! You answered ${answeredCount} of ${questions.length} questions.`,
+    });
+  };
+
+  const handleLoadDraft = () => {
+    const draft = localStorage.getItem("diagnostic_draft");
+    if (draft) {
+      try {
+        const draftData = JSON.parse(draft);
+        setRespondent(draftData.respondent);
+        setAnswers(draftData.answers);
+        setMessage({
+          type: "success",
+          text: `Draft loaded: ${draftData.answeredCount} of ${draftData.totalQuestions} questions answered.`,
+        });
+      } catch {
+        setMessage({
+          type: "error",
+          text: "Could not load draft.",
+        });
       }
-    } catch {
-      setMessage({ type: "error", text: "Network error." });
-    } finally {
-      setSaving(false);
+    } else {
+      setMessage({
+        type: "error",
+        text: "No draft found.",
+      });
     }
   };
 
   if (showSummary) {
     return (
-      <div className="summary-page">
-        <div className="summary-card">
-          {/* <div className="summary-icon">✓</div> */}
-          <h2>Hello <strong>{respondent}!</strong></h2>
-          <p>Thank you for completing the Leadership Diagnostic.</p>
-          <div className="summary-scores ">
-            <div className="summary-box highlight">
-              <span>Score:</span>
-              <strong>{totalScore}</strong>
+      <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
+        <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8 flex items-center justify-center">
+          <div className="w-full max-w-2xl bg-blue-400 rounded-3xl shadow-xl p-8 text-center">
+
+            <div className="flex justify-center mb-6">
+              <div className="h-20 w-20 rounded-full bg-yellow-100 flex items-center justify-center shadow-lg">
+                <span className="text-4xl">✓</span>
+              </div>
             </div>
-            <div className="summary-box highlight">
-              <span>Weighted Score:</span>
-              <strong>{totalWeightedScore}</strong>
+
+            <h2 className="text-3xl font-bold text-[#001B57] mb-2">
+              Hello <span className="text-yellow-700">{respondent}!</span>
+            </h2>
+
+            <p className="text-gray-700 text-lg mb-8">
+              Thank you for completing the Leadership Diagnostic.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+
+              <div className="bg-blue-50 rounded-2xl p-6 shadow-md">
+                <p className="text-sm text-gray-600 mb-2 font-semibold">Total Score</p>
+
+                <h3 className="text-4xl font-bold text-[#001B57]">{totalScore} </h3>
+              </div>
+
+              <div className="bg-yellow-50 rounded-2xl p-6 shadow-md">
+                <p className="text-sm text-gray-600 mb-2 font-semibold">Weighted Score </p>
+
+                <h3 className="text-4xl font-bold text-yellow-700">{totalWeightedScore} </h3>
+              </div>
+
             </div>
+
+            <div className="bg-green-100 border-2 border-green-400 rounded-2xl p-5 mb-6">
+              <p className="text-green-800 font-semibold text-lg"> ✓ Data saved successfully! </p>
+              <p className="text-green-700 text-sm mt-2"> Redirecting to Welcome Page in 5 seconds...</p>
+            </div>
+
           </div>
-          <p className="redirect">Returning to Welcome Page...</p>
         </div>
       </div>
-    );
-  }
+    )}
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl p-8">
+    <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
+      <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8">
         <div className="flex justify-center mb-6">
           <span className="bg-yellow-100 text-yellow-800 px-8 py-2 rounded-full text-lg font-semibold">
             LEAN IN COACHING
@@ -146,157 +221,114 @@ function Diagnostic() {
         <h1 className="text-4xl font-bold text-center text-[#001B57]">
           Leadership Reset Diagnostic
         </h1>
-        <p className="text-center text-gray-600 mt-3 mb-8 text-lg">
+        <p className="text-center text-gray-700 mt-3 mb-8 text-lg">
           Reflect on your leadership style during high-stakes decisions.
         </p>
 
-        {/* Application-level summary bar */}
-        {/* <div className="summary-bar">
-          <div className="summary-chip highlight">
-            <span>Answered</span>
-            <strong>{answeredCount} / {questions.length}</strong>
-          </div>
-          <div className="summary-chip highlight">
-            <span>Total Score</span>
-            <strong>{totalScore}</strong>
-          </div>
-          <div className="summary-chip highlight">
-            <span>Total Weight</span>
-            <strong>{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</strong>
-          </div>
-          <div className="summary-chip highlight">
-            <span>Weighted Score</span>
-            <strong>{totalWeightedScore}</strong>
-          </div>
-        </div> */}
-
         <div className="grid md:grid-cols-4 gap-4 mb-8">
 
-          <div className="bg-blue-50 rounded-2xl p-4 text-center">
-            <p className="text-gray-500 text-sm">Answered</p>
-            <h3 className="text-2xl font-bold text-[#001B57]">
+          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
+            <p className="text-gray-700 text-sm font-semibold">Answered</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
               {answeredCount}/{questions.length}
             </h3>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-4 text-center">
-            <p className="text-gray-500 text-sm">Score</p>
-            <h3 className="text-2xl font-bold text-[#001B57]">
+          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
+            <p className="text-gray-700 text-sm font-semibold">Score</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
               {totalScore}
             </h3>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-4 text-center">
-            <p className="text-gray-500 text-sm">Weight</p>
-            <h3 className="text-2xl font-bold text-[#001B57]">
+          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
+            <p className="text-gray-700 text-sm font-semibold">Weight</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
               {questionMetrics.reduce((sum, q) => sum + q.weight, 0)}
             </h3>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-4 text-center">
-            <p className="text-gray-500 text-sm">Weighted</p>
-            <h3 className="text-2xl font-bold text-[#001B57]">
+          <div className="bg-blue-400 rounded-2xl p-4 text-center shadow-md">
+            <p className="text-gray-700 text-sm font-semibold">Weighted</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">
               {totalWeightedScore}
             </h3>
           </div>
 
         </div>
 
-        <div className="mb-8">
+        <div className="bg-blue-400 rounded-2xl shadow-md p-6 mb-8">
 
-          <label className="block text-[#001B57] font-semibold mb-2">
+          <label className="block text-[#001B57] font-semibold mb-3 text-lg">
             Respondent Name
           </label>
 
-          <input
-            type="text"
-            value={respondent}
-            placeholder="Enter respondent name"
-            onChange={(e) => setRespondent(e.target.value)}
-            className="
-                  w-full
-                  border
-                  border-slate-300
-                  rounded-xl
-                  px-4
-                  py-3
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-[#001B57]
-                "
-          />
+          <input type="text" value={respondent} placeholder="Enter respondent name" onChange={(e) => setRespondent(e.target.value)}
+            className=" w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#001B57] text-gray-800"  />
 
         </div>
 
-        {loading && <p>Loading questions...</p>}
+        {loading && <p className="text-center text-[#001B57] font-semibold py-8">Loading questions...</p>}
 
         {!loading && (
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition p-6 ">
+          <div className="bg-blue-400 rounded-2xl shadow-md hover:shadow-lg transition p-6 mb-8">
             {questionMetrics.map((q) => (
 
-              <div key={q.rowIndex} className="text-[#001B57] font-semibold mb-4">
-                <p>  <strong>{q.number}.</strong> {q.question} </p>
+              <div key={q.rowIndex} className="text-[#001B57] font-semibold mb-6 pb-6 border-b border-blue-300 last:border-0 last:pb-0 last:mb-0">
+                <p className="mb-3"><strong>{q.number}.</strong> {q.question} </p>
 
-                {/* <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))}  >
+                <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))} 
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#001B57] text-gray-800 bg-white">
                   <option value="">-- Select an answer --</option>
-                  {q.options.map((opt) => (
-                    <option key={opt} value={opt}> {opt} </option>
-                  ))}
-                </select> */}
-
-                <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))
-                } className="   w-full    border    border-slate-300    rounded-xl    px-4    py-3    focus:ring-2    focus:ring-[#001B57]  ">
-                  <option value="">-- Select an answer --</option>
-                  {q.options.map((opt) => (
-                    <option key={opt} value={opt}> {opt} </option>
-                  ))}
-
+                  {q.options.map((opt) => ( <option key={opt} value={opt}> {opt} </option> ))}
                 </select>
 
                 <div className="flex flex-wrap gap-2 mt-4">
 
-                  <span className="bg-slate-100 px-3 py-1 rounded-full text-sm">
+                  <span className="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
                     Score: {q.score}
                   </span>
 
-                  <span className="bg-slate-100 px-3 py-1 rounded-full text-sm">
+                  <span className="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
                     Weight: {q.weight}
                   </span>
 
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-yellow-200 text-yellow-900 px-3 py-1 rounded-full text-sm font-semibold">
                     Weighted: {q.weightedScore}
                   </span>
-
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <button className="
-w-full
-mt-8
-bg-[#001B57]
-hover:bg-[#002f8a]
-text-white
-font-semibold
-py-4
-rounded-2xl
-transition
-disabled:opacity-50
-" onClick={handleSubmit} disabled={saving}      >
-          {saving ? "Saving..." : "Publish Data"}
-        </button>
+        <div className="grid grid-cols-3 gap-4 mt-8">
+          <button onClick={handleLoadDraft}  disabled={saving}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-4 rounded-2xl 
+            transition shadow-md hover:shadow-lg disabled:opacity-50" >
+            Load Draft
+          </button>
+
+          <button
+            onClick={handleSaveDraft}  disabled={saving}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl 
+            transition shadow-md hover:shadow-lg disabled:opacity-50">
+            Save Draft
+          </button>
+
+          <button onClick={handleSubmit}  disabled={saving}
+            className="bg-[#001B57] hover:bg-[#002c91] text-white font-semibold py-4 rounded-2xl 
+            transition disabled:opacity-50 shadow-lg hover:shadow-xl"  >
+            {saving ? "Publishing..." : "Publish Data"}
+          </button>
+        </div>
 
         {message && (
-          <p
-            className={`mt-4 text-center font-medium ${message.type === "error"
-                ? "text-red-600"
-                : "text-green-600"
-              }`}
-          >
+          <div className={`mt-6 p-4 rounded-2xl text-center font-medium ${message.type === "error"
+              ? "bg-red-100 text-red-800 border border-red-300"
+              : "bg-green-100 text-green-800 border border-green-300" }`}  >
             {message.text}
-          </p>
+          </div>
         )}
       </div>
     </div>

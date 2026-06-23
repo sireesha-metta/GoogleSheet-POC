@@ -5,6 +5,7 @@ import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, QuestionMarkCircleIcon
 import { INITIAL_REGISTER_FORM, INITIAL_REGISTER_ERRORS, } from "../types/register.types";
 import FormInput from "../component/FormInput";
 import { validators } from "../utils/validation";
+import humanhill from "../assets/human-hill.jpg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -72,8 +73,6 @@ export default function Login() {
 
     return errors;
   };
-
-
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
@@ -152,103 +151,133 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-amber-300 flex items-center justify-center p-4">
-      <div className="w-full max-w-8xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex">
-        <div className="min-h-screen flex overflow-hidden">
-          <div className="hidden md:block w-3/5 relative">
-            <img src="src/assets/human-hill.jpg" alt="Leadership" className="w-full h-full object-cover" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-950">
+      <img src={humanhill} alt="Leadership" className="absolute inset-0 h-full w-full object-cover" />
 
-            <div className="absolute inset-0 bg-black/25"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/45 to-slate-950/80" />
 
-            <div className="absolute top-14 left-1/2 -translate-x-1/2 z-8 text-white text-center">
-              <p className="text-2xl md:text-2xl drop-shadow-md text-white font-serif italic font-medium">
-                Lorraine@Leanin-Coaching.com
-              </p>
-              <h2 className="mt-3 text-2lg italic text-yellow-300 font-serif leading-tight">
-                Awaken the Leader Within
-              </h2>
-            </div>
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center justify-between gap-8 px-4            py-8 md:px-10 lg:px-14">
+        <div className="hidden max-w-[420px] md:block">
+          <h4 className="font-serif text-2xl lg:text-2xl leading-tight text-white drop-shadow-xl">
+            <span className="italic text-white">
+              Awaken the Leader Within
+            </span>
+          </h4>
 
-            <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
-          </div>
+          <div className="my-5 h-px w-40 bg-gradient-to-r from-transparent via-yellow-300 to-transparent" />
 
-          <div className="w-full md:w-2/5 bg-gradient-to-br from-[#334a80] via-[#3d5fa3] to-[#2a3d66] flex justify-center pt-12 p-8">
-            <div className="w-full max-w-lg mx-auto -mt-6">
-              <h1 className="text-center text-white font-serif text-2xl md:text-lg drop-shadow-md">
-                Leadership <span className="text-yellow-300"> Assessment </span>
-              </h1>
+          <p className="font-serif text-lg lg:text-xl italic text-white/90">
+            Elevate. Empower. Excel.
+          </p>
+        </div>
 
-              {/* <div className="w-full h-px bg-white/20 my-4"></div> */}
+        <div className="w-full md:max-w-[500px]">
+          <div className="rounded-[32px] border border-yellow-300/60 
+              bg-gradient-to-br from-[#1c1c1c]/95 via-[#243b55]/90 to-[#141e30]/95 
+              p-6 shadow-2xl backdrop-blur-md md:p-4">
+            <h1 className="text-center font-serif text-2xl text-white md:text-2xl">
+              Login <span className="text-yellow-200">Here</span>
+            </h1>
 
-              <p className="text-center text-yellow-300 italic text-3lg font-serif mb-6">
-                Elevate. Empower. Excel.
-              </p>
+            <div className="mx-auto mt-4 h-px w-56 bg-gradient-to-r from-transparent via-yellow-300/80 to-transparent" />
 
-              <div className="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-[0_0_40px_rgba(255,215,0,0.25)]">
-                <form onSubmit={onSubmit} className="space-y-4">
-                  <div>
-                    <div className="relative">
-                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+            <h3 className="mt-4 text-center text-md text-slate-100/95 md:text-lg italic">
+              Access your Leadership Assessment account
+            </h3>
 
-                      <FormInput type="email" value={email} placeholder="Email" error={errors.email} showErrorInPlaceholder={true}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setErrors((prev) => ({
-                            ...prev,
-                            email: "",
-                          }));
-                        }}
-                      />
-                    </div>
-                  </div>
+            <form onSubmit={onSubmit} className="mt-8 space-y-5">
+              <div className="relative">
+                <UserIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
 
-                  <div>
-                    <div className="relative">
-                      <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                      <FormInput type={showPassword ? "text" : "password"} value={password} placeholder="Password"
-                        error={errors.password} showErrorInPlaceholder={true}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setErrors((prev) => ({
-                            ...prev,
-                            password: "",
-                          }));
-                        }}
-                      />
-
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-4 right-10 text-white" >
-                        {showPassword ? (<EyeSlashIcon className="h-6 w-6" />) : (<EyeIcon className="h-6 w-6" />)}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="mr-2" />
-                    <span className="text-gray-200 text-sm">Keep me signed in</span>
-                    <span className="text-gray-200 ml-auto text-sm">Forgot Password?</span>
-                  </div>
-
-                  <button type="submit" disabled={isSubmitting}
-                    className="w-50 mx-auto block  py-2 rounded-lg text-2lg font-serif text-black bg-gradient-to-b from-yellow-300
-                   to-yellow-400 text-center" >
-                    {isSubmitting ? "Signing in..." : "Start Assessment"}
-                  </button>
-                </form>
-
-                <div className="border-t border-white/20 mt-6 pt-4">
-                  <p className="text-center text-yellow-300 italic text-lg font-serif mb-3">
-                    Don't Have an Account?{" "}<button type="button" onClick={() => setShowRegister(true)}
-                      className="underline font-semibold hover:text-yellow-200" >
-                      Register Here
-                    </button>
-                  </p>
-
-                  <p className="text-center text-white italic text-sm font-serif mb-4">
-                    Unlock Your Leadership Potential
-                  </p>
-                </div>
+                <FormInput
+                  type="email"
+                  value={email}
+                  placeholder="Email"
+                  error={errors.email}
+                  showErrorInPlaceholder={true}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors((prev) => ({
+                      ...prev,
+                      email: "",
+                    }));
+                  }}
+                />
               </div>
+
+              <div className="relative">
+                <LockClosedIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
+
+                <FormInput
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  placeholder="Password"
+                  error={errors.password}
+                  showErrorInPlaceholder={true}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors((prev) => ({
+                      ...prev,
+                      password: "",
+                    }));
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-4 text-white/95"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-6 w-6" />
+                  ) : (
+                    <EyeIcon className="h-6 w-6" />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm md:text-base">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-white/60 bg-transparent text-blue-500 accent-blue-500"
+                />
+
+                <span className="text-slate-100">Keep me signed in</span>
+
+                <button
+                  type="button"
+                  className="ml-auto text-yellow-300 transition hover:text-yellow-200"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-2 block w-full rounded-xl bg-gradient-to-b from-yellow-300 to-yellow-500 py-3 text-center text-3xl font-semibold text-slate-900 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70 md:text-4xl"
+              >
+                {isSubmitting ? "Signing in..." : "Start Assessment"}
+              </button>
+            </form>
+
+            <div className="mt-7 border-t border-white/30 pt-5">
+              <p className="text-center text-lg text-slate-100 md:text-xl">
+                Don't Have an Account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowRegister(true)}
+                  className="font-semibold text-yellow-300 underline transition hover:text-yellow-200"
+                >
+                  Register Here
+                </button>
+              </p>
+
+              <p className="mt-4 text-center font-serif text-2xl italic text-white/90 md:text-3xl">
+                Unlock Your Leadership Potential
+              </p>
             </div>
           </div>
         </div>
