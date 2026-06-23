@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { isAuthenticated, loginUser, registerUser } from "../utils/auth";
-import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon,QuestionMarkCircleIcon,EnvelopeIcon, PhoneIcon} from "@heroicons/react/24/outline";
+import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, QuestionMarkCircleIcon, EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
 import { INITIAL_REGISTER_FORM, INITIAL_REGISTER_ERRORS, } from "../types/register.types";
 import FormInput from "../component/FormInput";
 import { validators } from "../utils/validation";
@@ -17,9 +17,19 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-  if (isAuthenticated()) {
-    return <Navigate to="/welcome" replace />;
-  }
+  const [registerForm, setRegisterForm] = useState(
+    INITIAL_REGISTER_FORM
+  );
+
+  const [registerErrors, setRegisterErrors] = useState(
+    INITIAL_REGISTER_ERRORS
+  );
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate("/welcome", { replace: true });
+    }
+  }, [navigate]);
 
   const nextPath = location.state?.from?.pathname || "/welcome";
 
@@ -63,13 +73,7 @@ export default function Login() {
     return errors;
   };
 
-  const [registerForm, setRegisterForm] = useState(
-    INITIAL_REGISTER_FORM
-  );
 
-  const [registerErrors, setRegisterErrors] = useState(
-    INITIAL_REGISTER_ERRORS
-  );
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
@@ -144,7 +148,7 @@ export default function Login() {
     alert("Registration Successful");
 
     setRegisterForm(INITIAL_REGISTER_FORM);
-    setIsRegisterOpen(false);
+    setShowRegister(false);
   };
 
   return (
@@ -263,15 +267,15 @@ export default function Login() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
-                  <UserIcon  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                  <FormInput type="text" name="firstName" placeholder="First Name" value={registerForm.firstName} 
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                  <FormInput type="text" name="firstName" placeholder="First Name" value={registerForm.firstName}
                     onChange={handleRegisterChange} error={registerErrors.firstName} showErrorInPlaceholder={true} />
                 </div>
 
                 <div className="relative">
-                  <UserIcon  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                  <FormInput type="text" name="lastName" placeholder="Last Name" value={registerForm.lastName} 
-                    onChange={handleRegisterChange}  error={registerErrors.lastName}   showErrorInPlaceholder={true} />
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                  <FormInput type="text" name="lastName" placeholder="Last Name" value={registerForm.lastName}
+                    onChange={handleRegisterChange} error={registerErrors.lastName} showErrorInPlaceholder={true} />
                 </div>
               </div>
 
@@ -282,7 +286,7 @@ export default function Login() {
               </div>
 
               <div className="relative">
-                <EnvelopeIcon  className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
 
                 <FormInput type="email" name="email" placeholder="Email Address" value={registerForm.email} showErrorInPlaceholder={true}
                   onChange={handleRegisterChange} error={registerErrors.email} />

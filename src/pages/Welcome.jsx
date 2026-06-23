@@ -1,178 +1,100 @@
 import { useNavigate } from "react-router-dom";
-import "./Welcome.css";
-import { getAuthSession, logoutUser } from "../utils/auth";
+import { getAuthSession } from "../utils/auth";
+import Diagnostic from "./Diagnostic.jsx";
 
 
 export default function Welcome() {
   const user = getAuthSession();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logoutUser();
-    navigate("/login", { replace: true });
-  };
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-200 to-yellow-400">
+      <div className="min-h-screen bg-amber-300 max-w-6xl mx-auto px-6 py-8">
 
- return (
-  <div className="min-h-screen bg-slate-100">
-
-    {/* Header */}
-    <header className="bg-[#001B57] shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-
-        <div className="text-white text-2xl font-bold">
-          LEAN IN COACHING
-        </div>
-
-        <nav className="flex items-center gap-6">
-          <button
-            onClick={() => navigate("/")}
-            className="text-white hover:text-yellow-300 transition"
-          >
-            Welcome
-          </button>
-
-          <button
-            onClick={() => navigate("/diagnostic")}
-            className="text-white hover:text-yellow-300 transition"
-          >
-            Diagnostic
-          </button>
-
-          {user?.role === "ADMIN" && (
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-white hover:text-yellow-300 transition"
-            >
-              Dashboard
-            </button>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <span className="text-white font-medium">
-            {user?.name}
+        <div className="bg-blue-400 rounded-xl shadow-lg p-6 mb-6">
+          <span className="flex justify-center items-center text-[#001B57] px-8 py-2  text-3xl font-semibold w-fit mx-auto">
+            Leadership Assessment Platform
           </span>
 
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
-          >
-            Logout
+          <h2 className="text-2xl font-bold text-[#001B57] mt-4">
+            Welcome Back, {user?.name || "Leader"}
+          </h2>
+
+          <p className="text-black-600 text-lg mt-4 max-w-3xl">
+            Discover your leadership strengths, identify growth opportunities,
+            and improve your ability to guide teams through high-impact decisions.
+          </p>
+
+          <button onClick={() => navigate("/diagnostic")}
+            className="mt-8 bg-[#001B57] hover:bg-[#002c91] text-white px-8 py-2 rounded-xl font-semibold transition"  >
+            Start Assessment
           </button>
         </div>
 
-      </div>
-    </header>
+        <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
+            <p className="text-gray-700 text-sm uppercase">Assessment</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">Leadership Reset </h3>
+          </div>
 
-    <header className="w-full bg-gradient-to-r from-blue-900 to-blue-700 text-white flex justify-between items-center px-6 py-3 shadow-md">
-  <div className="font-bold text-lg">LEAN IN COACHING</div>
-  <nav className="flex gap-6">
-    <button onClick={() => navigate("/welcome")} className="hover:text-yellow-400">Home</button>
-    <button onClick={() => navigate("/diagnostic")} className="hover:text-yellow-400">Diagnostic</button>
-    <button onClick={() => navigate("/dashboard")} className="hover:text-yellow-400">Dashboard</button>
-    <button onClick={handleLogout} className="hover:text-yellow-400">Logout</button>
-  </nav>
-</header>
+          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
+            <p className="text-gray-700 text-sm uppercase">Duration</p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">10-15 Min</h3>
+          </div>
 
-
-    {/* Main Content */}
-    <div className="max-w-6xl mx-auto px-6 py-10">
-
-      <div className="bg-white rounded-2xl shadow-xl p-10">
-
-        <h1 className="text-4xl font-bold text-[#001B57] mb-4">
-          Leadership Reset Diagnostic
-        </h1>
-
-        <p className="text-gray-600 text-lg">
-          Assess how effectively you lead during high-stakes conversations,
-          critical decisions, and moments that require team alignment.
-        </p>
-
-        {/* Before You Begin */}
-        <div className="mt-8 bg-blue-50 border-l-4 border-[#001B57] p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-[#001B57] mb-2">
-            Before You Begin
-          </h3>
-
-          <p className="text-gray-700">
-            Consider each question from your own leadership position and
-            reflect on how you interact with your leadership team when
-            important decisions need to be made.
-          </p>
+          <div className="bg-blue-400 rounded-2xl shadow-md p-6">
+            <p className="text-gray-700 text-sm uppercase"> Questions </p>
+            <h3 className="text-2xl font-bold text-[#001B57] mt-2">20+ </h3>
+          </div>
         </div>
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+        {/* <h2 className="text-3xl font-bold text-[#001B57] mb-6">
+          Assessment Journey
+        </h2> */}
 
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">🧭</div>
-            <h4 className="font-semibold">Navigate</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Open the Diagnostic section.
-            </p>
+        <div className="grid md:grid-cols-4 gap-6">
+
+          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
+            <div className="text-4xl mb-4">🧭</div>
+            <h3 className="font-bold text-lg">Navigate</h3>
+            <p className="text-gray-900 mt-2"> Open the assessment section.</p>
           </div>
 
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">📖</div>
-            <h4 className="font-semibold">Read</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Review every question carefully.
-            </p>
+          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
+            <div className="text-4xl mb-4">📖</div>
+            <h3 className="font-bold text-lg">Read</h3>
+            <p className="text-gray-900 mt-2">Review every question carefully.</p>
           </div>
 
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">✅</div>
-            <h4 className="font-semibold">Respond</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Select your response from the dropdown menu.
-            </p>
+          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
+            <div className="text-4xl mb-4">✅</div>
+            <h3 className="font-bold text-lg">Respond</h3>
+            <p className="text-gray-900 mt-2">Select the best response.</p>
           </div>
 
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">🎯</div>
-            <h4 className="font-semibold">Review</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Review your calculated score.
-            </p>
+          <div className="bg-blue-400 rounded-2xl p-4 shadow-md hover:shadow-xl transition">
+            <div className="text-4xl mb-4">🎯</div>
+            <h3 className="font-bold text-lg">Review</h3>
+            <p className="text-gray-900 mt-2"> View your assessment score. </p>
           </div>
 
         </div>
 
-        {/* Info Box */}
-        <div className="mt-10 bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+        <div className="mt-10 bg-blue-400 rounded-2xl shadow-md p-8 border-l-4 border-yellow-500 text-center">
 
-          <h4 className="font-bold text-lg text-[#001B57] mb-3">
+          <h2 className="text-2xl font-bold text-[#001B57] mb-4">
             After Completion
-          </h4>
+          </h2>
 
-          <ul className="space-y-2 text-gray-700">
-            <li>• Save the completed diagnostic to Google Sheets</li>
-            <li>• Email the completed file to Lorraine</li>
-            <li>• Discuss results during the next coaching session</li>
+          <ul className="space-y-3 text-gray-900">
+            <li>✓ Save the completed diagnostic to Google Sheets</li>
+            <li>✓ Email the completed report to Lorraine</li>
+            <li>✓ Review results during the next coaching session</li>
           </ul>
 
         </div>
 
-        {/* Buttons */}
-        {/* <div className="flex flex-wrap gap-4 mt-10">
-
-          <button onClick={() => navigate("/diagnostic")}
-            className="bg-[#001B57] hover:bg-[#002f8a] text-white px-6 py-3 rounded-lg font-medium transition"
-          > Begin Diagnostic  </button>
-
-          {user?.role === "ADMIN" && (
-            <button  onClick={() => navigate("/dashboard")}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
-            > View Dashboard </button>
-          )}
-
-        </div> */}
-
       </div>
-
     </div>
-
-  </div>
-);
+  );
 }

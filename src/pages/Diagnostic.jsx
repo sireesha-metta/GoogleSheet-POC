@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Diagnostic.css";
 import { authFetch } from "../utils/auth";
 
 function toNumber(value) {
@@ -19,6 +18,8 @@ function Diagnostic() {
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
+
+    console.log("Session:", localStorage.getItem("gspoc_auth_session"));
     authFetch("/api/questions")
       .then((r) => r.json())
       .then((data) => {
@@ -100,7 +101,7 @@ function Diagnostic() {
       if (success) {
         setMessage({ type: "success", text: "Saved to Google Sheet!" });
         setShowSummary(true);
-        setTimeout(() => navigate("/welcome"), 8000);
+        // setTimeout(() => navigate("/welcome"), 8000);
       } else {
         setMessage({ type: "error", text: text || "Save failed." });
       }
@@ -135,16 +136,22 @@ function Diagnostic() {
   }
 
   return (
-    <div className="diagnostic-page">
-      <div className="glass-card fade-in">
-        <div className="brand">LEAN IN COACHING</div>
-        <h1>Leadership Reset Diagnostic</h1>
-        <p className="subtitle">
+    <div className="min-h-screen bg-slate-100 py-8 px-4">
+      <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-xl p-8">
+        <div className="flex justify-center mb-6">
+          <span className="bg-yellow-100 text-yellow-800 px-8 py-2 rounded-full text-lg font-semibold">
+            LEAN IN COACHING
+          </span>
+        </div>
+        <h1 className="text-4xl font-bold text-center text-[#001B57]">
+          Leadership Reset Diagnostic
+        </h1>
+        <p className="text-center text-gray-600 mt-3 mb-8 text-lg">
           Reflect on your leadership style during high-stakes decisions.
         </p>
 
         {/* Application-level summary bar */}
-        <div className="summary-bar">
+        {/* <div className="summary-bar">
           <div className="summary-chip highlight">
             <span>Answered</span>
             <strong>{answeredCount} / {questions.length}</strong>
@@ -161,46 +168,133 @@ function Diagnostic() {
             <span>Weighted Score</span>
             <strong>{totalWeightedScore}</strong>
           </div>
+        </div> */}
+
+        <div className="grid md:grid-cols-4 gap-4 mb-8">
+
+          <div className="bg-blue-50 rounded-2xl p-4 text-center">
+            <p className="text-gray-500 text-sm">Answered</p>
+            <h3 className="text-2xl font-bold text-[#001B57]">
+              {answeredCount}/{questions.length}
+            </h3>
+          </div>
+
+          <div className="bg-blue-50 rounded-2xl p-4 text-center">
+            <p className="text-gray-500 text-sm">Score</p>
+            <h3 className="text-2xl font-bold text-[#001B57]">
+              {totalScore}
+            </h3>
+          </div>
+
+          <div className="bg-blue-50 rounded-2xl p-4 text-center">
+            <p className="text-gray-500 text-sm">Weight</p>
+            <h3 className="text-2xl font-bold text-[#001B57]">
+              {questionMetrics.reduce((sum, q) => sum + q.weight, 0)}
+            </h3>
+          </div>
+
+          <div className="bg-blue-50 rounded-2xl p-4 text-center">
+            <p className="text-gray-500 text-sm">Weighted</p>
+            <h3 className="text-2xl font-bold text-[#001B57]">
+              {totalWeightedScore}
+            </h3>
+          </div>
+
         </div>
 
-        <div className="respondent-box">
-          <label>Respondent</label><br />
-          <input type="text" placeholder="e.g. Jane Smith" value={respondent}
-            onChange={(e) => setRespondent(e.target.value)} />
+        <div className="mb-8">
+
+          <label className="block text-[#001B57] font-semibold mb-2">
+            Respondent Name
+          </label>
+
+          <input
+            type="text"
+            value={respondent}
+            placeholder="Enter respondent name"
+            onChange={(e) => setRespondent(e.target.value)}
+            className="
+                  w-full
+                  border
+                  border-slate-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-[#001B57]
+                "
+          />
+
         </div>
 
         {loading && <p>Loading questions...</p>}
 
         {!loading && (
-          <div className="questions-grid">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition p-6 ">
             {questionMetrics.map((q) => (
 
-              <div key={q.rowIndex} className="question-card">
+              <div key={q.rowIndex} className="text-[#001B57] font-semibold mb-4">
                 <p>  <strong>{q.number}.</strong> {q.question} </p>
 
-                <select value={q.selectedAnswer}  onChange={(e) => setAnswers((prev) => ({...prev, [q.rowIndex]: e.target.value,})) }  >
+                {/* <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))}  >
                   <option value="">-- Select an answer --</option>
                   {q.options.map((opt) => (
                     <option key={opt} value={opt}> {opt} </option>
                   ))}
+                </select> */}
+
+                <select value={q.selectedAnswer} onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))
+                } className="   w-full    border    border-slate-300    rounded-xl    px-4    py-3    focus:ring-2    focus:ring-[#001B57]  ">
+                  <option value="">-- Select an answer --</option>
+                  {q.options.map((opt) => (
+                    <option key={opt} value={opt}> {opt} </option>
+                  ))}
+
                 </select>
 
-                <div className="metric-row">
-                  <span className="metric-chip">Score: {q.score}</span>
-                  <span className="metric-chip">Weight: {q.weight}</span>
-                  <span className="metric-chip strong">Weighted: {q.weightedScore}</span>
+                <div className="flex flex-wrap gap-2 mt-4">
+
+                  <span className="bg-slate-100 px-3 py-1 rounded-full text-sm">
+                    Score: {q.score}
+                  </span>
+
+                  <span className="bg-slate-100 px-3 py-1 rounded-full text-sm">
+                    Weight: {q.weight}
+                  </span>
+
+                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    Weighted: {q.weightedScore}
+                  </span>
+
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <button className="cta-btn" onClick={handleSubmit} disabled={saving}      >
+        <button className="
+w-full
+mt-8
+bg-[#001B57]
+hover:bg-[#002f8a]
+text-white
+font-semibold
+py-4
+rounded-2xl
+transition
+disabled:opacity-50
+" onClick={handleSubmit} disabled={saving}      >
           {saving ? "Saving..." : "Publish Data"}
         </button>
 
         {message && (
-          <p className={message.type === "error" ? "error-msg" : "success-msg"}>
+          <p
+            className={`mt-4 text-center font-medium ${message.type === "error"
+                ? "text-red-600"
+                : "text-green-600"
+              }`}
+          >
             {message.text}
           </p>
         )}
