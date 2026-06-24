@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { getDefaultAuthenticatedPath, getDefaultAuthenticatedPathForRole, isAuthenticated, loginUser, registerUser } from "../utils/auth";
-import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, QuestionMarkCircleIcon, EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { getDefaultAuthenticatedPath, getDefaultAuthenticatedPathForRole, isAuthenticated, loginUser, registerUser, requestPasswordReset } from "../utils/auth";
+import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, QuestionMarkCircleIcon, EnvelopeIcon, PhoneIcon, PaperAirplaneIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
 import { INITIAL_REGISTER_FORM, INITIAL_REGISTER_ERRORS, } from "../types/register.types";
 import FormInput from "../component/FormInput";
 import { validators } from "../utils/validation";
@@ -15,8 +15,16 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
+  const [loginInfoMessage, setLoginInfoMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotErrors, setForgotErrors] = useState({ email: "", newPassword: "", confirmPassword: "" });
+  const [showForgotPasswordText, setShowForgotPasswordText] = useState(false);
+  const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
 
   const [registerForm, setRegisterForm] = useState(
     INITIAL_REGISTER_FORM
@@ -104,6 +112,32 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateForgotPassword = () => {
+    const newErrors = { email: "", newPassword: "", confirmPassword: "" };
+
+    if (!forgotEmail.trim()) {
+      newErrors.email = "Email is required";
+    }
+
+    const emailError = validators.email(forgotEmail);
+    if (!newErrors.email && emailError) {
+      newErrors.email = emailError;
+    }
+
+    if (!forgotNewPassword.trim()) {
+      newErrors.newPassword = "Password is required";
+    }
+
+    if (!forgotConfirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirm Password is required";
+    } else if (forgotNewPassword !== forgotConfirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setForgotErrors(newErrors);
+    return !newErrors.email && !newErrors.newPassword && !newErrors.confirmPassword;
+  };
+
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -111,6 +145,7 @@ export default function Login() {
     if (!validate()) return;
 
     setErrors({});
+    setLoginInfoMessage("");
     setIsSubmitting(true);
 
     const result = await loginUser({ email, password, rememberMe });
@@ -152,10 +187,40 @@ export default function Login() {
       return;
     }
 
-    alert("Registration Successful");
-
     setRegisterForm(INITIAL_REGISTER_FORM);
     setShowRegister(false);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+
+    if (!validateForgotPassword()) return;
+
+    setIsForgotSubmitting(true);
+    setLoginInfoMessage("");
+
+    const result = await requestPasswordReset({
+      email: forgotEmail,
+      newPassword: forgotNewPassword,
+    });
+
+    setIsForgotSubmitting(false);
+
+    if (!result.success) {
+      setForgotErrors((prev) => ({
+        ...prev,
+        email: result.message || "Unable to process your request.",
+      }));
+      return;
+    }
+
+    setShowForgotPassword(false);
+    setForgotEmail("");
+    setForgotNewPassword("");
+    setForgotConfirmPassword("");
+    setForgotErrors({ email: "", newPassword: "", confirmPassword: "" });
+    setShowForgotPasswordText(false);
+    // setLoginInfoMessage(result.message || "Password updated successfully.");
   };
 
   return (
@@ -166,6 +231,11 @@ export default function Login() {
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center justify-between gap-8 px-4            py-8 md:px-10 lg:px-14">
         <div className="hidden max-w-[420px] md:block">
+          <h3 className="font-serif text-2xl lg:text-2xl leading-tight text-white drop-shadow-xl">
+            <span className="inline-flex items-center rounded-full border border-yellow-400/25 bg-yellow-500/10 px-5 py-2 text-yellow-200 shadow-sm mb-10">
+              LEAN IN COACHING
+            </span>
+          </h3>
           <h4 className="font-serif text-2xl lg:text-2xl leading-tight text-white drop-shadow-xl">
             <span className="italic text-white">
               Awaken the Leader Within
@@ -187,17 +257,23 @@ export default function Login() {
               <h1 className="font-serif text-3xl font-semibold text-white md:text-4xl">
                 Login
               </h1>
-              
-            <div className="mt-7 border-t border-white/20 pt-5 text-center">
-              
-              <p className="mt-3 text-lg italic text-white/80">
-               Access Your Leadership Assessment Account
-              </p>
-             
-            </div>
+
+              <div className="mt-7 border-t border-white/20 pt-5 text-center">
+
+                <p className="mt-3 text-lg italic text-white/80">
+                  Access Your Leadership Assessment Account
+                </p>
+
+              </div>
             </div>
 
             <form onSubmit={onSubmit} className="mt-8 space-y-5">
+              {loginInfoMessage && (
+                <div className="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  {loginInfoMessage}
+                </div>
+              )}
+
               <div className="relative">
                 <UserIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
 
@@ -238,7 +314,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/95"
+                  className="absolute top-1/2 right-10 -translate-y-1/2 text-white/95"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-6 w-6" />
@@ -255,11 +331,17 @@ export default function Login() {
                     onClick={() => setShowRegister(true)}
                     className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
                   >
-                    Register
+                    Register Here!
                   </button>
 
                   <button
                     type="button"
+                    onClick={() => {
+                      setShowForgotPassword(true);
+                      setLoginInfoMessage("");
+                      setForgotEmail(email);
+                      setForgotErrors({ email: "", newPassword: "", confirmPassword: "" });
+                    }}
                     className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
                   >
                     Forgot Password?
@@ -277,11 +359,11 @@ export default function Login() {
             </form>
 
             <div className="mt-7 border-t border-white/20 pt-5 text-center">
-              
+
               <p className="mt-3 text-lg italic text-white/80">
                 Unlock Your Leadership Potential
               </p>
-             
+
             </div>
 
           </div>
@@ -329,11 +411,11 @@ export default function Login() {
               <div className="relative">
                 <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
 
-                <FormInput type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={registerForm.password}
+                <FormInput type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={registerForm.password} autoComplete="current-password"
                   onChange={handleRegisterChange} error={registerErrors.password} showErrorInPlaceholder={true} />
 
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/95" >
+                  className="absolute right-10 top-1/2 -translate-y-1/2 text-white/95" >
                   {showPassword ? (<EyeSlashIcon className="h-6 w-6" />) : (<EyeIcon className="h-6 w-6" />)}
                 </button>
               </div>
@@ -346,7 +428,7 @@ export default function Login() {
                   onChange={handleRegisterChange} error={registerErrors.confirmPassword} />
 
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 right-10 text-white" >
+                  className="absolute top-4 right-10 text-white" >
                   {showPassword ? (<EyeSlashIcon className="h-6 w-6" />) : (<EyeIcon className="h-6 w-6" />)}
                 </button>
 
@@ -354,17 +436,117 @@ export default function Login() {
 
             </div>
 
-            <div className="flex justify-center gap-4 mt-8">
+            <div className="flex justify-center gap-4 pt-6">
               <button onClick={() => setShowRegister(false)} className="px-6 py-2 rounded-lg bg-gray-500 text-white"  >
                 Cancel
               </button>
 
               <button type="button" onClick={handleRegister}
-                className="px-6 py-2 rounded-lg text-black font-semibold bg-gradient-to-b from-yellow-300 to-yellow-400" >
-                Register
+                className="inline-flex items-center gap-2 px-6 py-2 rounded-lg text-black font-semibold bg-gradient-to-b from-yellow-300 to-yellow-400 disabled:cursor-not-allowed disabled:opacity-70" >
+                <RocketLaunchIcon className="h-5 w-5" />
+                Register Here
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-700/70 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-2xl border border-white/20 bg-gradient-to-br from-[#334a80] via-[#3d5fa3] to-[#2a3d66] p-8 shadow-2xl">
+            <h2 className="text-center text-2xl font-serif text-yellow-300 mb-3">
+              Forgot Password
+            </h2>
+
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              {/* <p className="rounded-xl border border-white/15 bg-slate-900/40 p-3 text-sm text-slate-100">
+                Enter your registered email and set a new password to update it directly.
+              </p> */}
+
+              <div className="relative">
+                <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                <FormInput
+                  type="email"
+                  value={forgotEmail}
+                  placeholder="Registered Email Address"
+                  autoComplete="email"
+                  error={forgotErrors.email}
+                  showErrorInPlaceholder={true}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    setForgotErrors((prev) => ({ ...prev, email: "" }));
+                  }}
+                />
+              </div>
+
+              <div className="relative">
+                <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                <FormInput
+                  type={showForgotPasswordText ? "text" : "password"}
+                  value={forgotNewPassword}
+                  placeholder="New Password"
+                  autoComplete="current-password"
+                  autocomplete="off"
+                  error={forgotErrors.newPassword}
+                  showErrorInPlaceholder={true}
+                  onChange={(e) => {
+                    setForgotNewPassword(e.target.value);
+                    setForgotErrors((prev) => ({ ...prev, newPassword: "" }));
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordText((prev) => !prev)}
+                  className="absolute right-10 top-1/2 -translate-y-1/2 text-white/95"
+                >
+                  {showForgotPasswordText ? <EyeSlashIcon className="h-6 w-6" /> : <EyeIcon className="h-6 w-6" />}
+                </button>
+              </div>
+
+              <div className="relative">
+                <QuestionMarkCircleIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
+                <FormInput
+                  type={showForgotPasswordText ? "text" : "password"}
+                  value={forgotConfirmPassword}
+                  placeholder="Confirm New Password"
+                  autoComplete="current-password"
+                  error={forgotErrors.confirmPassword}
+                  showErrorInPlaceholder={true}
+                  onChange={(e) => {
+                    setForgotConfirmPassword(e.target.value);
+                    setForgotErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                  }}
+                />
+              </div>
+
+              <div className="flex justify-center gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail("");
+                    setForgotNewPassword("");
+                    setForgotConfirmPassword("");
+                    setForgotErrors({ email: "", newPassword: "", confirmPassword: "" });
+                    setShowForgotPasswordText(false);
+                  }}
+                  className="px-6 py-2 rounded-lg bg-gray-500 text-white"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isForgotSubmitting}
+                  className="inline-flex items-center gap-2 px-6 py-2 rounded-lg text-black font-semibold bg-gradient-to-b from-yellow-300 to-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <PaperAirplaneIcon className="h-5 w-5" />
+                  {isForgotSubmitting ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

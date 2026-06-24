@@ -24,25 +24,6 @@ export default function Welcome() {
 
           </div>
 
-          {/* <div className="mt-8 grid gap-6 md:grid-cols-3">
-            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Assessment</p>
-              <h3 className="mt-4 text-2xl font-semibold text-white">Leadership Reset</h3>
-              <p className="mt-3 text-slate-400">A concise diagnostic designed to highlight your leadership potential.</p>
-            </div>
-
-            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Duration</p>
-              <h3 className="mt-4 text-2xl font-semibold text-white">10-15 min</h3>
-              <p className="mt-3 text-slate-400">Focused, fast, and relevant for busy leaders.</p>
-            </div>
-
-            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Questions</p>
-              <h3 className="mt-4 text-2xl font-semibold text-white">20+</h3>
-              <p className="mt-3 text-slate-400">Insightful prompts that surface your leadership style.</p>
-            </div>
-          </div> */}
 
           <div className="mt-10 grid gap-6 md:grid-cols-4">
             {[
@@ -51,7 +32,7 @@ export default function Welcome() {
               { icon: '✅', title: 'Respond', description: 'Select the answer that fits best.' },
               { icon: '🎯', title: 'Review', description: 'See your score and next steps.' },
             ].map((item) => (
-              <div key={item.title} className="rounded-3xl border border-yellow-400/10 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/5 transition hover:-translate-y-1 hover:border-yellow-300/40 hover:shadow-yellow-500/15">
+              <div key={item.title} className="rounded-3xl border border-white/20 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/5 transition hover:-translate-y-1 hover:border-yellow-300/40 hover:shadow-yellow-500/15">
                 <div className="text-4xl">{item.icon}</div>
                 <h3 className="mt-4 text-lg font-semibold text-white">{item.title}</h3>
                 <p className="mt-2 text-slate-400">{item.description}</p>

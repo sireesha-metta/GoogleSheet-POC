@@ -82,6 +82,22 @@ async function createUser(firstName, lastName, email, mobile, password) {
   }
 }
 
+async function updateUserPasswordByEmail(email, newPassword) {
+  if (!email || !newPassword) return false;
+
+  try {
+    const [result] = await db.execute(
+      `UPDATE Respondent SET password = ? WHERE email = ? AND status = 'Active'`,
+      [newPassword, email.toLowerCase()]
+    );
+
+    return Number(result?.affectedRows || 0) > 0;
+  } catch (error) {
+    console.error("Server: failed to update password", error);
+    return false;
+  }
+}
+
 // Row indices (0-based) that contain questions, mapped to xlsx D-column cell refs
 const QUESTION_ROWS = [6, 7, 8, 9, 12, 13, 14, 15, 18, 19, 20, 21];
 
@@ -318,6 +334,47 @@ app.post("/api/auth/login", async (req, res) => {
       },
       expiresAt,
     },
+  });
+});
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  const { email, newPassword } = req.body || {};
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedPassword = String(newPassword || "");
+
+  if (!normalizedEmail || !normalizedPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and new password are required.",
+    });
+  }
+
+  if (normalizedPassword.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be at least 8 characters.",
+    });
+  }
+
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(normalizedPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must contain uppercase, lowercase and number.",
+    });
+  }
+
+  const updated = await updateUserPasswordByEmail(normalizedEmail, normalizedPassword);
+
+  if (!updated) {
+    return res.status(404).json({
+      success: false,
+      message: "No active user found for this email.",
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: "Password updated successfully.",
   });
 });
 

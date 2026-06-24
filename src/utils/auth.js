@@ -348,3 +348,37 @@ export async function changePassword(currentPassword, newPassword) {
     return { success: false, message: error.message || "Network error" };
   }
 }
+
+export async function requestPasswordReset({ email, newPassword }) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedPassword = String(newPassword || "");
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: normalizedEmail, newPassword: normalizedPassword }),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data?.message || "Unable to reset password.",
+      };
+    }
+
+    return {
+      success: true,
+      message: data?.message || "Password updated successfully.",
+    };
+  } catch {
+    return {
+      success: false,
+      message: "Unable to reach backend server.",
+    };
+  }
+}

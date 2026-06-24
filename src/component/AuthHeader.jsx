@@ -63,11 +63,12 @@ export default function AuthHeader() {
   };
 
   return (
-    <header className="mb-8 overflow-visible rounded-[32px] border border-yellow-400/15 bg-slate-950/95 p-5 text-white shadow-[0_24px_80px_-35px_rgba(250,204,21,0.45)] backdrop-blur-sm">
+    <header className="mb-8 overflow-visible rounded-[32px] border border-yellow-400/15 p-5 text-white shadow-xl shadow-yellow-500/10">
+
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-end md:gap-6">
           <div className="text-right">
-            <p className="text-xs uppercase tracking-[0.28em] text-yellow-300/80">Authenticated session</p>
+            {/* <p className="text-xs uppercase tracking-[0.28em] text-yellow-300/80">Authenticated session</p> */}
             <h2 className="text-2xl font-semibold text-white">Welcome, {displayName}</h2>
             {user?.email ? <p className="text-sm text-slate-300">{user.email}</p> : null}
           </div>

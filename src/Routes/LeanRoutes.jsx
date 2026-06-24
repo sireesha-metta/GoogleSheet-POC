@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import Login from "../pages/Login.jsx";
+import ForgotPassword from "../pages/ForgotPassword.jsx";
 import Welcome from "../pages/Welcome.jsx";
 import Diagnostic from "../pages/Diagnostic.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
@@ -29,6 +30,8 @@ const AppRoutes = () => {
         <Route path="/" element={<RootRedirect />} />
 
         <Route path="/login" element={<Login />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/welcome" element={ <ProtectedRoute> <Welcome />  </ProtectedRoute>    }   />
 
