@@ -1,6 +1,18 @@
 const AUTH_STORAGE_KEY = "gspoc_auth_session";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+export function getDefaultAuthenticatedPathForRole(role) {
+  return String(role || "").trim().toLowerCase() === "admin" ? "/dashboard" : "/welcome";
+}
+
+export function getUserRole() {
+  return String(getAuthSession()?.role || "").trim().toLowerCase();
+}
+
+export function getDefaultAuthenticatedPath() {
+  return getDefaultAuthenticatedPathForRole(getUserRole());
+}
+
 export function isAuthenticated() {
   const session = getAuthSession();
   if (!session?.token || !session?.expiresAt) return false;

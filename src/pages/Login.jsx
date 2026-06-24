@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { isAuthenticated, loginUser, registerUser } from "../utils/auth";
+import { getDefaultAuthenticatedPath, getDefaultAuthenticatedPathForRole, isAuthenticated, loginUser, registerUser } from "../utils/auth";
 import { UserIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, QuestionMarkCircleIcon, EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
 import { INITIAL_REGISTER_FORM, INITIAL_REGISTER_ERRORS, } from "../types/register.types";
 import FormInput from "../component/FormInput";
@@ -28,11 +28,11 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate("/welcome", { replace: true });
+      navigate(getDefaultAuthenticatedPath(), { replace: true });
     }
   }, [navigate]);
 
-  const nextPath = location.state?.from?.pathname || "/welcome";
+  const requestedPath = location.state?.from?.pathname || null;
 
   const validateRegisterForm = (form) => {
     const errors = {};
@@ -123,6 +123,14 @@ export default function Login() {
       });
       return;
     }
+
+    const roleDefaultPath = getDefaultAuthenticatedPathForRole(result.session?.role);
+    const nextPath =
+      !requestedPath || requestedPath === "/" || requestedPath === "/login" || requestedPath === "/welcome"
+        ? roleDefaultPath
+        : requestedPath === "/dashboard" && roleDefaultPath !== "/dashboard"
+          ? roleDefaultPath
+          : requestedPath;
 
     navigate(nextPath, { replace: true });
   };
