@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getAuthSession, updateAuthSession, logoutUser, fetchAuthProfile } from "../utils/auth";
 import FormInput from "../component/FormInput";
 import { validators } from "../utils/validation";
-import { changePassword } from "../utils/auth";
+import { changePassword, updateAuthProfile } from "../utils/auth";
 import {
   UserIcon,
   PhoneIcon,
@@ -16,7 +16,7 @@ import {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const session = getAuthSession();
+  const [session, setSession] = useState(() => getAuthSession());
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -29,14 +29,16 @@ export default function Profile() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!session) return;
+    const currentSession = getAuthSession();
+    if (!currentSession) return;
+    setSession(currentSession);
 
-    const sessionUser = session.user || session;
+    const sessionUser = currentSession.user || currentSession;
     const savedFirst = sessionUser.firstName || sessionUser.firstname || "";
     const savedLast = sessionUser.lastName || sessionUser.lastname || "";
-    const savedEmail = sessionUser.email || session.email || "";
-    const savedMobile = sessionUser.mobile || sessionUser.phone || sessionUser.phoneNumber || session.mobile || "";
-    const savedName = sessionUser.name || session.name || "";
+    const savedEmail = sessionUser.email || currentSession.email || "";
+    const savedMobile = sessionUser.mobile || sessionUser.phone || sessionUser.phoneNumber || currentSession.mobile || "";
+    const savedName = sessionUser.name || currentSession.name || "";
 
     if (!savedFirst && !savedLast && savedName) {
       const parts = savedName.trim().split(" ");
@@ -50,32 +52,43 @@ export default function Profile() {
     setEmail(savedEmail);
     setMobile(savedMobile);
 
-    if (!savedFirst && !savedLast && !savedMobile && !savedEmail) {
-      fetchAuthProfile().then((result) => {
-        if (!result.success) return;
-        const profile = result.profile || {};
-        const profileFirst = profile.firstName || profile.firstname || "";
-        const profileLast = profile.lastName || profile.lastname || "";
-        const profileEmail = profile.email || "";
-        const profileMobile = profile.mobile || profile.phone || profile.phoneNumber || "";
+    fetchAuthProfile().then((result) => {
+      if (!result.success) return;
+      const profile = result.profile || {};
+      const profileFirst = profile.firstName || profile.firstname || "";
+      const profileLast = profile.lastName || profile.lastname || "";
+      const profileEmail = profile.email || "";
+      const profileMobile = profile.mobile || profile.phone || profile.phoneNumber || "";
 
-        if (profileFirst || profileLast) {
-          setFirstName(profileFirst);
-          setLastName(profileLast);
-        }
-        if (profileEmail) setEmail(profileEmail);
-        if (profileMobile) setMobile(profileMobile);
+      if (profileFirst || profileLast) {
+        setFirstName(profileFirst);
+        setLastName(profileLast);
+      }
+      if (profileEmail) setEmail(profileEmail);
+      if (profileMobile) setMobile(profileMobile);
 
-        updateAuthSession({
+      const updatedSession = updateAuthSession({
+        firstName: profileFirst,
+        lastName: profileLast,
+        email: profileEmail,
+        mobile: profileMobile,
+        name: `${profileFirst} ${profileLast}`.trim() || profile.name || currentSession.name,
+        user: {
+          ...(currentSession?.user || {}),
           firstName: profileFirst,
           lastName: profileLast,
+          firstname: profileFirst,
+          lastname: profileLast,
           email: profileEmail,
           mobile: profileMobile,
-          name: `${profileFirst} ${profileLast}`.trim() || profile.name || session.name,
-        });
+        },
       });
-    }
-  }, [session]);
+
+      if (updatedSession) {
+        setSession(updatedSession);
+      }
+    });
+  }, []);
 
   const firstRef = useRef(null);
   const lastRef = useRef(null);
@@ -121,12 +134,50 @@ export default function Profile() {
       return;
     }
 
-    const updated = updateAuthSession({
+    setMessage("Updating profile...");
+
+    const profileUpdateResult = await updateAuthProfile({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       mobile: mobile.trim(),
-      name: `${firstName.trim()} ${lastName.trim()}`.trim() || session?.name,
     });
+
+    if (!profileUpdateResult.success) {
+      setMessage(profileUpdateResult.message || "Profile update failed.");
+      return;
+    }
+
+    const apiUser = profileUpdateResult.user || {};
+    const nextFirst = apiUser.firstname || apiUser.firstName || firstName.trim();
+    const nextLast = apiUser.lastname || apiUser.lastName || lastName.trim();
+    const nextEmail = apiUser.email || email;
+    const nextMobile = apiUser.mobile || mobile.trim();
+
+    setFirstName(nextFirst);
+    setLastName(nextLast);
+    setEmail(nextEmail);
+    setMobile(nextMobile);
+
+    const updated = updateAuthSession({
+      firstName: nextFirst,
+      lastName: nextLast,
+      email: nextEmail,
+      mobile: nextMobile,
+      name: `${nextFirst} ${nextLast}`.trim() || session?.name,
+      user: {
+        ...(session?.user || {}),
+        firstName: nextFirst,
+        lastName: nextLast,
+        firstname: nextFirst,
+        lastname: nextLast,
+        email: nextEmail,
+        mobile: nextMobile,
+      },
+    });
+
+    if (updated) {
+      setSession(updated);
+    }
 
     if (password.trim()) {
       setMessage("Updating password...");
@@ -232,6 +283,7 @@ export default function Profile() {
                   name="email"
                   placeholder="Email Address"
                   value={email}
+                  disabled
                   readOnly
                   error={errors.email}
                   showErrorInPlaceholder={true}

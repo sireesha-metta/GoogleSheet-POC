@@ -18,6 +18,7 @@ const FormInput = forwardRef(function FormInput({
       <input
         ref={ref}
         {...props}
+        value={value ?? ""}
         placeholder={
           showErrorInPlaceholder && error
             ? error

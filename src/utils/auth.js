@@ -172,16 +172,57 @@ export async function authFetch(path, options = {}) {
 
 export async function fetchAuthProfile() {
   try {
-    const response = await authFetch("/api/auth/me");
+    const response = await authFetch("/api/auth/me", {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
+
+    // Some browsers can surface cached 304 responses with empty bodies.
+    // In that case, use whatever session profile we already have.
+    if (response.status === 304) {
+      const session = getAuthSession();
+      const profile = session?.user || session || {};
+      return { success: true, profile };
+    }
+
     const data = await response.json().catch(() => null);
 
     if (!response.ok || !data?.success) {
+      const session = getAuthSession();
+      const profile = session?.user || session || null;
+      if (profile) return { success: true, profile };
       return { success: false, message: data?.message || "Unable to fetch profile." };
     }
 
-    return { success: true, profile: data.data };
+    return { success: true, profile: data?.data?.user || data.data || {} };
   } catch (error) {
+    const session = getAuthSession();
+    const profile = session?.user || session || null;
+    if (profile) return { success: true, profile };
     return { success: false, message: error.message || "Unable to fetch profile." };
+  }
+}
+
+export async function updateAuthProfile(payload) {
+  try {
+    const response = await authFetch("/api/auth/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to update profile." };
+    }
+
+    return { success: true, message: data.message || "Profile updated.", user: data?.data?.user || null };
+  } catch (error) {
+    return { success: false, message: error.message || "Unable to update profile." };
   }
 }
 
@@ -236,6 +277,59 @@ export async function submitDiagnostic(payload) {
   } catch (error) {
     console.error("Error submitting diagnostic:", error);
     return { success: false, message: "Network error." };
+  }
+}
+
+export async function saveDiagnosticDraft(payload) {
+  try {
+    const response = await authFetch("/api/draft", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to save draft." };
+    }
+
+    return { success: true, message: data.message || "Draft saved.", data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error." };
+  }
+}
+
+export async function loadDiagnosticDraft() {
+  try {
+    const response = await authFetch("/api/draft");
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "No draft found." };
+    }
+
+    return { success: true, data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Unable to load draft." };
+  }
+}
+
+export async function clearDiagnosticDraft() {
+  try {
+    const response = await authFetch("/api/draft", {
+      method: "DELETE",
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to clear draft." };
+    }
+
+    return { success: true, message: data.message || "Draft cleared." };
+  } catch (error) {
+    return { success: false, message: error.message || "Unable to clear draft." };
   }
 }
 

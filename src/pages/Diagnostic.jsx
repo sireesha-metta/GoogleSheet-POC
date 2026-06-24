@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getQuestions, submitDiagnostic } from "../utils/auth";
+import { clearDiagnosticDraft, getQuestions, loadDiagnosticDraft, saveDiagnosticDraft, submitDiagnostic } from "../utils/auth";
 import AuthHeader from "../component/AuthHeader.jsx";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function toNumber(value) {
   const n = Number(value);
@@ -20,21 +18,54 @@ function Diagnostic() {
   const [message, setMessage] = useState(null);
   const [showSummary, setShowSummary] = useState(false);
 
-  useEffect(() => {
-    // Load questions using utility function
-    getQuestions().then((result) => {
-      if (result.success) {
-        setQuestions(result.data);
-        const initial = {};
-        result.data.forEach((q) => {
-          if (q.answer) initial[q.rowIndex] = q.answer;
-        });
-        setAnswers(initial);
-      } else {
-        setMessage({ type: "error", text: result.error });
-      }
-      setLoading(false);
+  const applyDraftData = (draftData, fallbackQuestionCount = 0) => {
+    setRespondent(draftData.respondent || "");
+    setAnswers(draftData.answersByRow || {});
+    setMessage({
+      type: "success",
+      text: `Draft loaded: ${draftData.answeredCount || 0} of ${draftData.totalQuestions || fallbackQuestionCount} questions answered.`,
     });
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const initializeDiagnostic = async () => {
+      const questionResult = await getQuestions();
+
+      if (!active) return;
+
+      if (!questionResult.success) {
+        setMessage({ type: "error", text: questionResult.error });
+        setLoading(false);
+        return;
+      }
+
+      const loadedQuestions = questionResult.data;
+      setQuestions(loadedQuestions);
+
+      const initialAnswers = {};
+      loadedQuestions.forEach((q) => {
+        if (q.answer) initialAnswers[q.rowIndex] = q.answer;
+      });
+      setAnswers(initialAnswers);
+
+      const draftResult = await loadDiagnosticDraft();
+
+      if (!active) return;
+
+      if (draftResult.success && draftResult.data) {
+        applyDraftData(draftResult.data, loadedQuestions.length);
+      }
+
+      setLoading(false);
+    };
+
+    initializeDiagnostic();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
 
@@ -63,6 +94,25 @@ function Diagnostic() {
     (sum, q) => sum + q.weightedScore,
     0
   );
+
+  const buildDraftPayload = () => ({
+    respondent: respondent.trim() || "Anonymous",
+    savedAt: new Date().toISOString(),
+    answeredCount,
+    totalQuestions: questions.length,
+    totalScore,
+    totalWeightedScore,
+    answersByRow: answers,
+    questionResponses: questionMetrics.map((q) => ({
+      rowIndex: q.rowIndex,
+      number: q.number,
+      question: q.question,
+      answer: q.selectedAnswer,
+      score: q.score,
+      weight: q.weight,
+      weightedScore: q.weightedScore,
+    })),
+  });
 
   const handleSubmit = async () => {
     if (Object.keys(answers).length === 0) {
@@ -96,6 +146,7 @@ function Diagnostic() {
     const result = await submitDiagnostic(payload);
 
     if (result.success) {
+      await clearDiagnosticDraft();
       setMessage({ type: "success", text: result.message });
       setShowSummary(true);
     } else {
@@ -105,8 +156,7 @@ function Diagnostic() {
     setSaving(false);
   };
 
-  const handleSaveDraft = () => {
-    // Validate respondent name
+  const handleSaveDraft = async () => {
     if (!respondent.trim()) {
       setMessage({
         type: "error",
@@ -115,7 +165,6 @@ function Diagnostic() {
       return;
     }
 
-    // Validate at least one answer
     if (Object.keys(answers).length === 0) {
       setMessage({
         type: "error",
@@ -124,45 +173,24 @@ function Diagnostic() {
       return;
     }
 
-    // Save draft to localStorage
-    const draftData = {
-      respondent: respondent.trim(),
-      answers: answers,
-      savedAt: new Date().toISOString(),
-      answeredCount: answeredCount,
-      totalQuestions: questions.length,
-    };
+    setSaving(true);
+    setMessage(null);
 
-    localStorage.setItem("diagnostic_draft", JSON.stringify(draftData));
-    setMessage({
-      type: "success",
-      text: `Draft saved! You answered ${answeredCount} of ${questions.length} questions.`,
-    });
-  };
+    const result = await saveDiagnosticDraft(buildDraftPayload());
 
-  const handleLoadDraft = () => {
-    const draft = localStorage.getItem("diagnostic_draft");
-    if (draft) {
-      try {
-        const draftData = JSON.parse(draft);
-        setRespondent(draftData.respondent);
-        setAnswers(draftData.answers);
-        setMessage({
-          type: "success",
-          text: `Draft loaded: ${draftData.answeredCount} of ${draftData.totalQuestions} questions answered.`,
-        });
-      } catch {
-        setMessage({
-          type: "error",
-          text: "Could not load draft.",
-        });
-      }
+    if (result.success) {
+      setMessage({
+        type: "success",
+        text: result.message || `Draft saved! You answered ${answeredCount} of ${questions.length} questions.`,
+      });
     } else {
       setMessage({
         type: "error",
-        text: "No draft found.",
+        text: result.message,
       });
     }
+
+    setSaving(false);
   };
 
   if (showSummary) {
@@ -298,18 +326,11 @@ function Diagnostic() {
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-3 mt-8">
-              <button
-                onClick={handleLoadDraft}
-                disabled={saving}
-                className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50"
-              >
-                Load Draft
-              </button>
+            <div className="grid gap-4 md:grid-cols-2 mt-8">
               <button
                 onClick={handleSaveDraft}
                 disabled={saving}
-                className="rounded-2xl bg-slate-800 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50"
               >
                 Save Draft
               </button>
