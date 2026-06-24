@@ -1,167 +1,87 @@
 import { useNavigate } from "react-router-dom";
-import "./Welcome.css";
-import { getAuthSession, logoutUser } from "../utils/auth";
+import AuthHeader from "../component/AuthHeader.jsx";
 
 
 export default function Welcome() {
-  const user = getAuthSession();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logoutUser();
-    navigate("/login", { replace: true });
-  };
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-8">
+        <AuthHeader />
+        <div className="rounded-[32px] border border-yellow-400/20 bg-slate-950/95 p-8 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.28em] text-yellow-300/90">Welcome back</p>
+              <h1 className="mt-3 text-4xl font-serif font-semibold text-white md:text-5xl">
+                Leadership Assessment
+              </h1>
+              <p className="mt-4 max-w-2xl text-slate-300">
+                Discover your leadership strengths, identify growth opportunities, and guide your team with confidence.
+              </p>
+            </div>
 
- return (
-  <div className="min-h-screen bg-slate-100">
+          </div>
 
-    {/* Header */}
-    <header className="bg-[#001B57] shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          {/* <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Assessment</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">Leadership Reset</h3>
+              <p className="mt-3 text-slate-400">A concise diagnostic designed to highlight your leadership potential.</p>
+            </div>
 
-        <div className="text-white text-2xl font-bold">
-          LEAN IN COACHING
-        </div>
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Duration</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">10-15 min</h3>
+              <p className="mt-3 text-slate-400">Focused, fast, and relevant for busy leaders.</p>
+            </div>
 
-        <nav className="flex items-center gap-6">
-          <button
-            onClick={() => navigate("/")}
-            className="text-white hover:text-yellow-300 transition"
-          >
-            Welcome
-          </button>
+            <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/5 transition hover:border-yellow-300/40">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Questions</p>
+              <h3 className="mt-4 text-2xl font-semibold text-white">20+</h3>
+              <p className="mt-3 text-slate-400">Insightful prompts that surface your leadership style.</p>
+            </div>
+          </div> */}
 
-          <button
-            onClick={() => navigate("/diagnostic")}
-            className="text-white hover:text-yellow-300 transition"
-          >
-            Diagnostic
-          </button>
+          <div className="mt-10 grid gap-6 md:grid-cols-4">
+            {[
+              { icon: '🧭', title: 'Navigate', description: 'Open the assessment section.' },
+              { icon: '📖', title: 'Read', description: 'Review each question carefully.' },
+              { icon: '✅', title: 'Respond', description: 'Select the answer that fits best.' },
+              { icon: '🎯', title: 'Review', description: 'See your score and next steps.' },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl border border-yellow-400/10 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/5 transition hover:-translate-y-1 hover:border-yellow-300/40 hover:shadow-yellow-500/15">
+                <div className="text-4xl">{item.icon}</div>
+                <h3 className="mt-4 text-lg font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-slate-400">{item.description}</p>
+              </div>
+            ))}
+          </div>
 
-          {user?.role === "ADMIN" && (
+          <div className="mt-10 rounded-3xl border border-yellow-400/25 bg-slate-950/80 p-8 shadow-xl shadow-yellow-500/10">
+            <h2 className="text-2xl font-semibold text-white">After Completion</h2>
+            <ul className="mt-5 space-y-3 text-slate-300">
+              <li>✓ Save the completed diagnostic to Google Sheets</li>
+              <li>✓ Email the completed report to your coach</li>
+              <li>✓ Review results during your next session</li>
+            </ul>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-yellow-400/15 bg-slate-900/80 p-6 text-center shadow-xl shadow-yellow-500/10">
+            <p className="text-sm uppercase tracking-[0.3em] text-yellow-300/80">Your leadership edge</p>
+            <p className="max-w-2xl text-base text-slate-300">
+              Take the next step with a polished assessment experience designed for emerging and established leaders alike.
+            </p>
             <button
-              onClick={() => navigate("/dashboard")}
-              className="text-white hover:text-yellow-300 transition"
+              onClick={() => navigate("/diagnostic")}
+              className="rounded-full bg-yellow-500 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400"
             >
-              Dashboard
+              Start Assessment
             </button>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <span className="text-white font-medium">
-            {user?.name}
-          </span>
-
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
-          >
-            Logout
-          </button>
+          </div>
         </div>
-
       </div>
-    </header>
-
-    {/* Main Content */}
-    <div className="max-w-6xl mx-auto px-6 py-10">
-
-      <div className="bg-white rounded-2xl shadow-xl p-10">
-
-        <h1 className="text-4xl font-bold text-[#001B57] mb-4">
-          Leadership Reset Diagnostic
-        </h1>
-
-        <p className="text-gray-600 text-lg">
-          Assess how effectively you lead during high-stakes conversations,
-          critical decisions, and moments that require team alignment.
-        </p>
-
-        {/* Before You Begin */}
-        <div className="mt-8 bg-blue-50 border-l-4 border-[#001B57] p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-[#001B57] mb-2">
-            Before You Begin
-          </h3>
-
-          <p className="text-gray-700">
-            Consider each question from your own leadership position and
-            reflect on how you interact with your leadership team when
-            important decisions need to be made.
-          </p>
-        </div>
-
-        {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">🧭</div>
-            <h4 className="font-semibold">Navigate</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Open the Diagnostic section.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">📖</div>
-            <h4 className="font-semibold">Read</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Review every question carefully.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">✅</div>
-            <h4 className="font-semibold">Respond</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Select your response from the dropdown menu.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl shadow p-6 text-center">
-            <div className="text-5xl mb-3">🎯</div>
-            <h4 className="font-semibold">Review</h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Review your calculated score.
-            </p>
-          </div>
-
-        </div>
-
-        {/* Info Box */}
-        <div className="mt-10 bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
-
-          <h4 className="font-bold text-lg text-[#001B57] mb-3">
-            After Completion
-          </h4>
-
-          <ul className="space-y-2 text-gray-700">
-            <li>• Save the completed diagnostic to Google Sheets</li>
-            <li>• Email the completed file to Lorraine</li>
-            <li>• Discuss results during the next coaching session</li>
-          </ul>
-
-        </div>
-
-        {/* Buttons */}
-        {/* <div className="flex flex-wrap gap-4 mt-10">
-
-          <button onClick={() => navigate("/diagnostic")}
-            className="bg-[#001B57] hover:bg-[#002f8a] text-white px-6 py-3 rounded-lg font-medium transition"
-          > Begin Diagnostic  </button>
-
-          {user?.role === "ADMIN" && (
-            <button  onClick={() => navigate("/dashboard")}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
-            > View Dashboard </button>
-          )}
-
-        </div> */}
-
-      </div>
-
     </div>
-
-  </div>
-);
+  );
 }

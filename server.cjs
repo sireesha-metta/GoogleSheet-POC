@@ -1,10 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 const XLSX = require("xlsx");
 const crypto = require("crypto");
+const mysql = require("mysql2/promise");
+require("dotenv").config();
 
 const app = express();
-const PORT = Number(process.env.PORT || 3001);
+const PORT = Number(process.env.PORT || 5000);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
 app.use(
@@ -22,7 +26,7 @@ app.use(
 );
 app.use(express.json());
 
-const FILE_PATH = "Leadership_Reset_Diagnostic_NR.xlsx";
+const FILE_PATH = path.join(process.cwd(), "Leadership_Reset_Diagnostic_NR.xlsx");
 const SHEET_NAME = "Diagnostic";
 const SCORE_SHEET_NAME = "Scores";
 const GOOGLE_SCRIPT_URL =
@@ -31,13 +35,52 @@ const GOOGLE_SCRIPT_URL =
 
 const ADMIN_EMAIL =
   (process.env.ADMIN_EMAIL || "admin@leanin-coaching.com").trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
+const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Admin";
+const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "User";
+const ADMIN_MOBILE = process.env.ADMIN_MOBILE || "9876543210";
+let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
 const TOKEN_TTL_MS = Number(process.env.TOKEN_TTL_MS || 8 * 60 * 60 * 1000);
 const REMEMBER_TOKEN_TTL_MS = Number(
   process.env.REMEMBER_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000
 );
 
 const sessions = new Map();
+
+const db = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "new_password",
+  database: process.env.DB_NAME || "leadership_assesment",
+  waitForConnections: true,
+  connectionLimit: 10,
+});
+
+async function findUserByEmail(email) {
+  if (!email) return null;
+  try {
+    const [rows] = await db.execute(
+      `SELECT * FROM Respondent WHERE email = ? AND status = 'Active'`,
+      [email.toLowerCase()]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error("Server: failed to query user", error);
+    return null;
+  }
+}
+
+async function createUser(firstName, lastName, email, mobile, password) {
+  try {
+    const [result] = await db.execute(
+      `INSERT INTO Respondent (firstname, lastname, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
+      [firstName, lastName, email.toLowerCase(), password, "RESPONDENT", "Active"]
+    );
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error("Server: failed to create user", error);
+    return false;
+  }
+}
 
 // Row indices (0-based) that contain questions, mapped to xlsx D-column cell refs
 const QUESTION_ROWS = [6, 7, 8, 9, 12, 13, 14, 15, 18, 19, 20, 21];
@@ -60,6 +103,7 @@ function getAuthToken(req) {
 
 function requireAuth(req, res, next) {
   const token = getAuthToken(req);
+  console.log("Server.requireAuth", { authorization: req.headers.authorization, token, hasSession: sessions.has(token) });
   if (!token || !sessions.has(token)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -73,6 +117,7 @@ function requireAuth(req, res, next) {
   req.auth = {
     token,
     email: session.email,
+    role: session.role,
   };
 
   next();
@@ -166,7 +211,69 @@ function readQuestions() {
   });
 }
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
+  const { firstName, lastName, email, mobile, password, confirmPassword } = req.body || {};
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  if (!firstName || !lastName || !mobile || !normalizedEmail || !password || !confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "All registration fields are required.",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Passwords do not match.",
+    });
+  }
+
+  const existingUser = await findUserByEmail(normalizedEmail);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "This email is already registered.",
+    });
+  }
+
+  const created = await createUser(firstName, lastName, normalizedEmail, mobile, password);
+  if (!created) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create account.",
+    });
+  }
+
+  const token = createToken();
+  const expiresAt = Date.now() + TOKEN_TTL_MS;
+
+  sessions.set(token, {
+    email: normalizedEmail,
+    role: "RESPONDENT",
+    firstName: String(firstName),
+    lastName: String(lastName),
+    mobile: String(mobile),
+    expiresAt,
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      token,
+      user: {
+        email: normalizedEmail,
+        role: "RESPONDENT",
+        firstName: String(firstName),
+        lastName: String(lastName),
+        mobile: String(mobile),
+      },
+      expiresAt,
+    },
+  });
+});
+
+app.post("/api/auth/login", async (req, res) => {
   const { email, password, rememberMe = false } = req.body || {};
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const normalizedPassword = String(password || "");
@@ -178,7 +285,8 @@ app.post("/api/auth/login", (req, res) => {
     });
   }
 
-  if (normalizedEmail !== ADMIN_EMAIL || normalizedPassword !== ADMIN_PASSWORD) {
+  const user = await findUserByEmail(normalizedEmail);
+  if (!user || normalizedPassword !== user.password) {
     return res.status(401).json({
       success: false,
       message: "Invalid email or password.",
@@ -189,7 +297,11 @@ app.post("/api/auth/login", (req, res) => {
   const expiresAt = Date.now() + (rememberMe ? REMEMBER_TOKEN_TTL_MS : TOKEN_TTL_MS);
 
   sessions.set(token, {
-    email: ADMIN_EMAIL,
+    email: user.email,
+    role: user.role || "RESPONDENT",
+    firstName: user.firstname || "",
+    lastName: user.lastname || "",
+    mobile: user.mobile || "",
     expiresAt,
   });
 
@@ -198,7 +310,11 @@ app.post("/api/auth/login", (req, res) => {
     data: {
       token,
       user: {
-        email: ADMIN_EMAIL,
+        email: user.email,
+        role: user.role || "RESPONDENT",
+        firstName: user.firstname || "",
+        lastName: user.lastname || "",
+        mobile: user.mobile || "",
       },
       expiresAt,
     },
@@ -210,6 +326,10 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
     success: true,
     data: {
       email: req.auth.email,
+      role: req.auth.role,
+      firstName: req.auth.firstName,
+      lastName: req.auth.lastName,
+      mobile: req.auth.mobile,
     },
   });
 });
@@ -217,6 +337,31 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
 app.post("/api/auth/logout", requireAuth, (req, res) => {
   sessions.delete(req.auth.token);
   res.json({ success: true });
+});
+
+// POST /api/auth/change-password — change admin password (simple demo: requires auth)
+app.post("/api/auth/change-password", requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: "Current and new password are required." });
+  }
+
+  if (String(currentPassword) !== String(ADMIN_PASSWORD)) {
+    return res.status(403).json({ success: false, message: "Current password is incorrect." });
+  }
+
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ success: false, message: "New password must be at least 8 characters." });
+  }
+
+  // basic complexity check
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(String(newPassword))) {
+    return res.status(400).json({ success: false, message: "Password must contain uppercase, lowercase and number." });
+  }
+
+  ADMIN_PASSWORD = String(newPassword);
+  return res.json({ success: true, message: "Password updated (in-memory)." });
 });
 
 // GET /api/questions — returns all questions with current answers
@@ -294,13 +439,15 @@ app.post("/api/submit", requireAuth, async (req, res) => {
   }
 });
 
-app.get("/api/submissions", requireAuth, async (req, res) => {
+app.get("/api/submissions", async (req, res) => {
+  console.log("Server: received /api/submissions request");
   try {
     const upstream = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSubmissions`);
+    console.log("Server: upstream submissions status", upstream.status);
     const data = await upstream.json();
     res.json(data);
   } catch (error) {
-    console.error(error);
+    console.error("Server: failed to load submissions", error);
     res.status(502).json({
       success: false,
       error: "Failed to load submissions from Google Script.",
@@ -308,8 +455,19 @@ app.get("/api/submissions", requireAuth, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  const fileExists = fs.existsSync(FILE_PATH);
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`File: ${FILE_PATH}`);
+  console.log(`File exists: ${fileExists}`);
   console.log(`Frontend origin: ${FRONTEND_ORIGIN}`);
+  console.log(`MySQL Database: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
+
+  try {
+    const conn = await db.getConnection();
+    console.log("Database Connected Successfully");
+    conn.release();
+  } catch (err) {
+    console.error("Database Connection Failed:", err.message);
+  }
 });

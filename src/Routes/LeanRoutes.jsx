@@ -4,7 +4,9 @@ import Login from "../pages/Login.jsx";
 import Welcome from "../pages/Welcome.jsx";
 import Diagnostic from "../pages/Diagnostic.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
-import { isAuthenticated } from "../utils/auth";
+import Profile from "../pages/Profile.jsx";
+import RoleGuard from "../component/RoleGuard.jsx";
+import { getDefaultAuthenticatedPath, isAuthenticated } from "../utils/auth";
 
 function ProtectedRoute({ children }) {
   const location = useLocation();
@@ -17,7 +19,7 @@ function ProtectedRoute({ children }) {
 }
 
 function RootRedirect() {
-  return <Navigate to={isAuthenticated() ? "/welcome" : "/login"} replace />;
+  return <Navigate to={isAuthenticated() ? getDefaultAuthenticatedPath() : "/login"} replace />;
 }
 
 const AppRoutes = () => {
@@ -26,18 +28,15 @@ const AppRoutes = () => {
 
         <Route path="/" element={<RootRedirect />} />
 
-        {/* Login Screen */}
         <Route path="/login" element={<Login />} />
 
-        {/* Welcome Screen */}
-        <Route  path="/welcome" element={ <ProtectedRoute>     <Welcome />   </ProtectedRoute>    }     />
+        <Route path="/welcome" element={ <ProtectedRoute> <Welcome />  </ProtectedRoute>    }   />
 
-        {/* Leadership Diagnostic */}
-        <Route  path="/diagnostic" element={ <ProtectedRoute> <Diagnostic /> </ProtectedRoute>    }     />
+        <Route path="/diagnostic" element={ <ProtectedRoute> <Diagnostic /> </ProtectedRoute> }  />
 
-        {/* Submissions Dashboard */}
-        <Route
-          path="/dashboard"  element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>   }     />
+        <Route path="/profile" element={ <ProtectedRoute> <Profile /> </ProtectedRoute> } />
+
+        <Route path="/dashboard"  element={<RoleGuard allowedRoles={["admin"]}> <Dashboard /> </RoleGuard> } />
 
         <Route path="*" element={<RootRedirect />} />
 

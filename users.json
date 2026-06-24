@@ -1,0 +1,10 @@
+{
+  "admin@leanin-coaching.com": {
+    "email": "admin@leanin-coaching.com",
+    "password": "Lean@123",
+    "firstName": "Admin",
+    "lastName": "User",
+    "mobile": "9876543210",
+    "role": "admin"
+  }
+}
