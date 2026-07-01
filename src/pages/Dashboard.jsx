@@ -125,14 +125,17 @@ export default function Dashboard() {
   return (
     <main style={s.page}>
       <div style={s.shell}>
-        <div style={s.pageHeader}>
+        {/* <div style={s.pageHeader}>
           <AuthHeader />
-        </div>
+        </div> */}
         {/* ── Header ── */}
         <header style={s.header}>
-          <button style={s.backBtn} onClick={() => navigate("/")}>← Back</button>
+          {/* <button style={s.backBtn} onClick={() => navigate("/")}>← Back</button> */}
+          <AuthHeader />
+          
           <h1 style={s.title}>Submissions Dashboard</h1>
           <p style={s.subtitle}>All responses saved to Google Sheets</p>
+
         </header>
 
         {/* ── Filter bar ── */}
@@ -381,6 +384,7 @@ const s = {
     color: "rgba(255,255,255,0.72)",
     fontSize: 13,
     margin: 0,
+    marginBottom: 9,
   },
 
   /* ── Filter bar ── */
