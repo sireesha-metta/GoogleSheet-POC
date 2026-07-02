@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearDiagnosticDraft,fetchAuthProfile,getQuestions,loadDiagnosticDraft,saveDiagnosticDraft,submitDiagnostic,} from "../utils/auth";
+import {
+  clearDiagnosticDraft,
+  fetchAuthProfile,
+  getAuthSession,
+  getQuestions,
+  loadDiagnosticDraft,
+  saveDiagnosticDraft,
+  submitDiagnostic,
+} from "../utils/auth";
 import AuthHeader from "../component/AuthHeader.jsx";
 
 function toNumber(value) {
@@ -20,8 +28,11 @@ function Diagnostic() {
   const [showSummary, setShowSummary] = useState(false);
 
   const applyDraftData = (draftData, fallbackQuestionCount = 0) => {
-    setRespondent(draftData.respondent || "");
-    setMobile(draftData.mobile || "");
+    const draftRespondent = String(draftData.respondent || "").trim();
+    const draftMobile = String(draftData.mobile || "").trim();
+
+    setRespondent((prev) => draftRespondent || prev || "");
+    setMobile((prev) => draftMobile || prev || "");
     setAnswers(draftData.answersByRow || {});
     setMessage({
       type: "success",
@@ -49,6 +60,22 @@ function Diagnostic() {
 
         if (fullName) setRespondent(fullName);
         if (profileMobile) setMobile(profileMobile);
+      }
+
+      const session = getAuthSession();
+      const sessionName = String(
+        session?.name || `${session?.firstName || ""} ${session?.lastName || ""}`
+      ).trim();
+      const sessionMobile = String(
+        session?.mobile || session?.phone || session?.phoneNumber || ""
+      ).trim();
+
+      if (sessionName) {
+        setRespondent((prev) => prev || sessionName);
+      }
+
+      if (sessionMobile) {
+        setMobile((prev) => prev || sessionMobile);
       }
 
 

@@ -1,5 +1,9 @@
 const AUTH_STORAGE_KEY = "gspoc_auth_session";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD
+    ? "https://leadership-assesment.onrender.com"
+    : "http://localhost:5000");
 
 export function getDefaultAuthenticatedPathForRole(role) {
   return String(role || "").trim().toLowerCase() === "admin" ? "/dashboard" : "/welcome";
@@ -51,15 +55,19 @@ export function updateAuthSession(patch) {
   return updated;
 }
 
-export async function loginUser({ email, password, rememberMe = false }) {
+export async function loginUser({ identifier, email, password, rememberMe = false }) {
   try {
+    const loginId = String(identifier || email || "").trim();
+
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email,
+        identifier: loginId,
+        email: loginId,
+        mobile: loginId,
         password,
         rememberMe,
       }),
@@ -70,7 +78,7 @@ export async function loginUser({ email, password, rememberMe = false }) {
     if (!response.ok || !data?.success || !data?.data?.token) {
       return {
         success: false,
-        message: data?.message || data?.error || "Invalid email or password.",
+        message: data?.message || data?.error || "Invalid credentials.",
       };
     }
 

@@ -100,7 +100,7 @@ export default function Login() {
     const newErrors = {};
 
     if (!email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "Email or mobile is required";
     }
 
     if (!password.trim()) {
@@ -148,13 +148,13 @@ export default function Login() {
     setLoginInfoMessage("");
     setIsSubmitting(true);
 
-    const result = await loginUser({ email, password, rememberMe });
+    const result = await loginUser({ identifier: email, password, rememberMe });
 
     setIsSubmitting(false);
 
     if (!result.success) {
       setErrors({
-        password: result.message || "Invalid email or password",
+        password: result.message || "Invalid credentials",
       });
       return;
     }
@@ -278,9 +278,10 @@ export default function Login() {
                 <UserIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
 
                 <FormInput
-                  type="email"
+                  type="text"
                   value={email}
                   placeholder="Email / Phone number"
+                  autoComplete="username"
                   error={errors.email}
                   showErrorInPlaceholder={true}
                   onChange={(e) => {
