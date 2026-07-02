@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
 import AppRoutes from "./Routes/LeanRoutes.jsx";
+import Footer from "./pages/Footer.jsx";
 
 export default function App() {
   useEffect(() => {
@@ -24,7 +25,14 @@ export default function App() {
     }
   }, []);
 
-  return <AppRoutes />;
+  return (
+    <div className="flex min-h-screen flex-col">
+      <main className="flex-1">
+        <AppRoutes />
+      </main>
+      <Footer />
+    </div>
+  );
 }
  
 
