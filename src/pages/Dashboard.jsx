@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { authFetch } from "../utils/auth";
+import { authFetch, createAdminUser } from "../utils/auth";
+import { validators } from "../utils/validation";
+import { UserIcon, EnvelopeIcon, PhoneIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import AuthHeader from "../component/AuthHeader.jsx";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
@@ -39,6 +42,24 @@ export default function Dashboard() {
   // Sorting
   const [sortBy, setSortBy]           = useState("timestamp");
   const [sortOrder, setSortOrder]     = useState("desc");
+
+  const [adminForm, setAdminForm] = useState({
+    firstName: "",
+    lastName: "",
+    mobile: "",
+    email: "",
+    password: "",
+  });
+  const [adminCreateBusy, setAdminCreateBusy] = useState(false);
+  const [adminCreateMessage, setAdminCreateMessage] = useState(null);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminErrors, setAdminErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+    password: "",
+  });
 
   useEffect(() => {
     authFetch("/api/submissions")
@@ -122,6 +143,149 @@ export default function Dashboard() {
 
   const toggleExpand = (idx) => setExpanded((prev) => (prev === idx ? null : idx));
 
+  const getFieldError = (field, rawValue) => {
+    const value = String(rawValue || "").trim();
+
+    if (field === "firstName") return value ? "" : "First name is required";
+    if (field === "lastName") return value ? "" : "Last name is required";
+
+    if (field === "email") {
+      if (!value) return "Email is required";
+      return validators.email(value);
+    }
+
+    if (field === "mobile") {
+      const digits = value.replace(/\D/g, "").slice(-10);
+      if (!digits) return "Mobile number is required";
+      return validators.mobile(digits);
+    }
+
+    if (field === "password") {
+      if (!value) return "Password is required";
+      return validators.password(value);
+    }
+
+    return "";
+  };
+
+  const hasValue = (field) => String(adminForm[field] || "").trim().length > 0;
+
+  const getFieldStatus = (field) => {
+    if (adminErrors[field]) return "error";
+    if (hasValue(field)) return "valid";
+    return "idle";
+  };
+
+  const handleAdminFormChange = (field, value) => {
+    setAdminForm((prev) => {
+      const next = { ...prev, [field]: value };
+      setAdminErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: getFieldError(field, next[field]),
+      }));
+      return next;
+    });
+  };
+
+  const openAdminModal = () => {
+    setAdminCreateMessage(null);
+    setAdminErrors({ firstName: "", lastName: "", email: "", mobile: "", password: "" });
+    setShowAdminModal(true);
+  };
+
+  const closeAdminModal = () => {
+    if (adminCreateBusy) return;
+    setShowAdminModal(false);
+  };
+
+  const validateAdminForm = () => {
+    const nextErrors = {
+      firstName: "",
+      lastName: "",
+      email: "",
+      mobile: "",
+      password: "",
+    };
+
+    const firstName = String(adminForm.firstName || "").trim();
+    const lastName = String(adminForm.lastName || "").trim();
+    const email = String(adminForm.email || "").trim();
+    const password = String(adminForm.password || "");
+    const mobileDigits = String(adminForm.mobile || "").replace(/\D/g, "");
+    const normalizedMobile = mobileDigits.slice(-10);
+
+    if (!firstName) {
+      nextErrors.firstName = "First name is required";
+    }
+
+    if (!lastName) {
+      nextErrors.lastName = "Last name is required";
+    }
+
+    if (!email) {
+      nextErrors.email = "Email is required";
+    } else {
+      const emailError = validators.email(email);
+      if (emailError) {
+        nextErrors.email = emailError;
+      }
+    }
+
+    if (!normalizedMobile) {
+      nextErrors.mobile = "Mobile number is required";
+    } else {
+      const mobileError = validators.mobile(normalizedMobile);
+      if (mobileError) {
+        nextErrors.mobile = mobileError;
+      }
+    }
+
+    if (!password) {
+      nextErrors.password = "Password is required";
+    } else {
+      const passwordError = validators.password(password);
+      if (passwordError) {
+        nextErrors.password = passwordError;
+      }
+    }
+
+    setAdminErrors(nextErrors);
+    return !Object.values(nextErrors).some(Boolean);
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+
+    const isValid = validateAdminForm();
+    if (!isValid) {
+      // setAdminCreateMessage({ type: "error", text: "Please fix validation errors." });
+      return;
+    }
+
+    setAdminCreateBusy(true);
+    setAdminCreateMessage(null);
+
+    const result = await createAdminUser({
+      firstName: String(adminForm.firstName || "").trim(),
+      lastName: String(adminForm.lastName || "").trim(),
+      email: String(adminForm.email || "").trim().toLowerCase(),
+      mobile: String(adminForm.mobile || "").replace(/\D/g, "").slice(-10),
+      password: String(adminForm.password || ""),
+    });
+
+    if (!result.success) {
+      setAdminCreateMessage({ type: "error", text: result.message || "Unable to create admin user." });
+      setAdminCreateBusy(false);
+      return;
+    }
+
+    setAdminCreateMessage({ type: "success", text: result.message || "Admin user created successfully." });
+    setAdminForm({ firstName: "", lastName: "", mobile: "", email: "", password: "" });
+    setAdminErrors({ firstName: "", lastName: "", email: "", mobile: "", password: "" });
+    setAdminCreateBusy(false);
+    setShowAdminModal(false);
+  };
+
   return (
     <main style={s.page}>
       <div style={s.shell}>
@@ -137,6 +301,16 @@ export default function Dashboard() {
           <p style={s.subtitle}>All responses saved to Google Sheets</p>
 
         </header>
+
+        <div style={s.adminQuickBar}>
+           {/* <button style={s.openAdminModalBtn} onClick={openAdminModal}>
+            Create respondent
+          </button> */}
+          <div></div>
+          <button style={s.openAdminModalBtn} onClick={openAdminModal}>
+            Create Admin
+          </button>
+        </div>
 
         {/* ── Filter bar ── */}
         <div style={s.filterBar}>
@@ -328,6 +502,111 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {showAdminModal && (
+        <div style={s.modalBackdrop}>
+          <div style={s.modalCard}>
+            <div style={s.modalHeader}>
+              <div>
+                <h2 style={s.adminTitle}>Create Admin User</h2>
+                <p style={s.adminHint}>Only admins can add new admin accounts.</p>
+              </div>
+            </div>
+
+            {adminCreateMessage && (
+              <div
+                style={{
+                  ...(adminCreateMessage.type === "error" ? s.adminMsgError : s.adminMsgSuccess),
+                }}
+              >
+                {adminCreateMessage.text}
+              </div>
+            )}
+
+            <form style={s.adminForm} onSubmit={handleCreateAdmin}>
+              <div style={s.adminRowTwo}>
+                <div style={s.adminFieldWithIcon}>
+                  <UserIcon style={s.adminFieldIcon} />
+                  <input
+                    style={{ ...s.adminInput, ...(adminErrors.firstName ? s.adminInputError : {}) }}
+                    placeholder={adminErrors.firstName || "First name"}
+                    value={adminForm.firstName}
+                    onChange={(e) => handleAdminFormChange("firstName", e.target.value)}
+                  />
+                  {getFieldStatus("firstName") === "error" && <XCircleIcon style={s.adminStatusIconError} />}
+                  {getFieldStatus("firstName") === "valid" && <CheckCircleIcon style={s.adminStatusIconValid} />}
+                </div>
+
+                <div style={s.adminFieldWithIcon}>
+                  <UserIcon style={s.adminFieldIcon} />
+                  <input
+                    style={{ ...s.adminInput, ...(adminErrors.lastName ? s.adminInputError : {}) }}
+                    placeholder={adminErrors.lastName || "Last name"}
+                    value={adminForm.lastName}
+                    onChange={(e) => handleAdminFormChange("lastName", e.target.value)}
+                  />
+                  {getFieldStatus("lastName") === "error" && <XCircleIcon style={s.adminStatusIconError} />}
+                  {getFieldStatus("lastName") === "valid" && <CheckCircleIcon style={s.adminStatusIconValid} />}
+                </div>
+              </div>
+
+              <div style={s.adminField}>
+                <div style={s.adminFieldWithIcon}>
+                  <EnvelopeIcon style={s.adminFieldIcon} />
+                  <input
+                    style={{ ...s.adminInput, ...(adminErrors.email ? s.adminInputError : {}) }}
+                    type="email"
+                    placeholder={adminErrors.email || "Email"}
+                    value={adminForm.email}
+                    onChange={(e) => handleAdminFormChange("email", e.target.value)}
+                  />
+                  {getFieldStatus("email") === "error" && <XCircleIcon style={s.adminStatusIconError} />}
+                  {getFieldStatus("email") === "valid" && <CheckCircleIcon style={s.adminStatusIconValid} />}
+                </div>
+              </div>
+
+              <div style={s.adminField}>
+                <div style={s.adminFieldWithIcon}>
+                  <PhoneIcon style={s.adminFieldIcon} />
+                  <input
+                    style={{ ...s.adminInput, ...(adminErrors.mobile ? s.adminInputError : {}) }}
+                    type="tel"
+                    placeholder={adminErrors.mobile || "Mobile number"}
+                    value={adminForm.mobile}
+                    onChange={(e) => handleAdminFormChange("mobile", e.target.value)}
+                  />
+                  {getFieldStatus("mobile") === "error" && <XCircleIcon style={s.adminStatusIconError} />}
+                  {getFieldStatus("mobile") === "valid" && <CheckCircleIcon style={s.adminStatusIconValid} />}
+                </div>
+              </div>
+
+              <div style={s.adminField}>
+                <div style={s.adminFieldWithIcon}>
+                  <LockClosedIcon style={s.adminFieldIcon} />
+                  <input
+                    style={{ ...s.adminInput, ...(adminErrors.password ? s.adminInputError : {}) }}
+                    type="password"
+                    placeholder={adminErrors.password || "Password"}
+                    value={adminForm.password}
+                    onChange={(e) => handleAdminFormChange("password", e.target.value)}
+                  />
+                  {getFieldStatus("password") === "error" && <XCircleIcon style={s.adminStatusIconError} />}
+                  {getFieldStatus("password") === "valid" && <CheckCircleIcon style={s.adminStatusIconValid} />}
+                </div>
+              </div>
+
+              <div style={s.adminActionsRow}>
+                <button type="button" style={s.adminCancelBtn} onClick={closeAdminModal} disabled={adminCreateBusy}>
+                  Cancel
+                </button>
+                <button type="submit" style={s.adminSubmitBtn} disabled={adminCreateBusy}>
+                  {adminCreateBusy ? "Creating..." : "Create Admin"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -385,6 +664,188 @@ const s = {
     fontSize: 13,
     margin: 0,
     marginBottom: 9,
+  },
+  openAdminModalBtn: {
+    height: 38,
+    padding: "0 18px",
+    border: "none",
+    borderRadius: 10,
+    background: "linear-gradient(180deg, #fde047 0%, #facc15 100%)",
+    color: "#111827",
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: "pointer",
+  },
+  adminQuickBar: {
+    padding: "12px 24px",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    justifyContent: "space-between",
+    background: "#eef3fb",
+    borderBottom: "1px solid #d7dfeb",
+  },
+  adminQuickText: {
+    color: "#1f2d3f",
+    fontWeight: 700,
+    fontSize: 14,
+    letterSpacing: "0.5px",
+    textTransform: "uppercase",
+  },
+  headerActionsRow: {
+    justifyContent: "flex-end",
+  },
+  modalBackdrop: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(55, 65, 81, 0.72)",
+    backdropFilter: "blur(3px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: 16,
+  },
+  modalCard: {
+    width: "min(780px, 100%)",
+    background: "linear-gradient(135deg, #2f4476 0%, #37548d 50%, #2b416d 100%)",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    borderRadius: 18,
+    boxShadow: "0 24px 50px rgba(2, 6, 23, 0.45)",
+    padding: 22,
+  },
+  modalHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 12,
+    textAlign: "center",
+  },
+  adminTitle: {
+    margin: 0,
+    fontSize: 30,
+    color: "#fde047",
+    fontWeight: 600,
+    fontFamily: "Georgia, 'Times New Roman', serif",
+  },
+  adminHint: {
+    margin: "8px 0 4px",
+    color: "rgba(255, 255, 255, 0.88)",
+    fontSize: 17,
+    fontStyle: "italic",
+  },
+  adminMsgError: {
+    background: "rgba(153, 27, 27, 0.2)",
+    border: "1px solid rgba(252, 165, 165, 0.7)",
+    color: "#fee2e2",
+    borderRadius: 8,
+    padding: "10px 12px",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  adminMsgSuccess: {
+    background: "rgba(22, 101, 52, 0.28)",
+    border: "1px solid rgba(134, 239, 172, 0.75)",
+    color: "#dcfce7",
+    borderRadius: 8,
+    padding: "10px 12px",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  adminForm: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    maxWidth: 640,
+    margin: "0 auto",
+  },
+  adminRowTwo: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+  },
+  adminField: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  adminFieldWithIcon: {
+    position: "relative",
+  },
+  adminFieldIcon: {
+    position: "absolute",
+    left: 14,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 20,
+    height: 20,
+    color: "#facc15",
+    pointerEvents: "none",
+  },
+  adminStatusIconError: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 20,
+    height: 20,
+    color: "#ef4444",
+    pointerEvents: "none",
+  },
+  adminStatusIconValid: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 20,
+    height: 20,
+    color: "#facc15",
+    pointerEvents: "none",
+  },
+  adminInput: {
+    height: 46,
+    width: "100%",
+    padding: "0 44px 0 46px",
+    border: "1px solid rgba(148, 163, 184, 0.55)",
+    borderRadius: 12,
+    fontSize: 15,
+    color: "#f8fafc",
+    background: "rgba(15, 23, 42, 0.55)",
+    outline: "none",
+  },
+  adminInputError: {
+    border: "1px solid rgba(252, 165, 165, 0.9)",
+    color: "#fee2e2",
+  },
+  adminActionsRow: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 14,
+    marginTop: 8,
+  },
+  adminCancelBtn: {
+    height: 42,
+    minWidth: 120,
+    padding: "0 20px",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#fff",
+    background: "#6b7280",
+    cursor: "pointer",
+  },
+  adminSubmitBtn: {
+    height: 42,
+    minWidth: 150,
+    padding: "0 22px",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#111827",
+    background: "linear-gradient(180deg, #fde047 0%, #facc15 100%)",
+    cursor: "pointer",
   },
 
   /* ── Filter bar ── */

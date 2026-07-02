@@ -138,6 +138,38 @@ export async function registerUser(registerForm) {
   }
 }
 
+export async function createAdminUser(payload) {
+  try {
+    const response = await authFetch("/api/auth/admins", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        message: data?.message || "Unable to create admin user.",
+      };
+    }
+
+    return {
+      success: true,
+      message: data?.message || "Admin user created successfully.",
+      data: data?.data || null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || "Unable to reach backend server.",
+    };
+  }
+}
+
 export async function logoutUser() {
   const token = getAuthToken();
 
