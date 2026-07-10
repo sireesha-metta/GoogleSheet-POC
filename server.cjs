@@ -20,7 +20,7 @@ app.use(
       }
       callback(new Error("Not allowed by CORS"));
     },
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -33,17 +33,13 @@ const GOOGLE_SCRIPT_URL =
   process.env.GOOGLE_SCRIPT_URL ||
   "https://script.google.com/macros/s/AKfycbytHuWxCiTwSTM-1gbpt2UgWzGXWDhZD-QqllAyC6Tcy_xxrdD--Kk2QBjYGcXbubfY/exec";
 
-const ADMIN_EMAIL =
-  (process.env.ADMIN_EMAIL || "admin@leanin-coaching.com").trim().toLowerCase();
-const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Admin";
-const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "User";
-const ADMIN_MOBILE = process.env.ADMIN_MOBILE || "9876543210";
-let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
+// const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@leanin-coaching.com").trim().toLowerCase();
+// const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Admin";
+// const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "User";
+// const ADMIN_MOBILE = process.env.ADMIN_MOBILE || "9876543210";
+// let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
 const TOKEN_TTL_MS = Number(process.env.TOKEN_TTL_MS || 8 * 60 * 60 * 1000);
-const REMEMBER_TOKEN_TTL_MS = Number(
-  process.env.REMEMBER_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000
-);
-
+const REMEMBER_TOKEN_TTL_MS = Number(process.env.REMEMBER_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000);
 const sessions = new Map();
 
 const db = mysql.createPool({
@@ -65,6 +61,19 @@ async function findUserByEmail(email) {
     return rows.length > 0 ? rows[0] : null;
   } catch (error) {
     console.error("Server: failed to query user", error);
+    return null;
+  }
+}
+
+async function findAnyUserByEmail(email) {
+  if (!email) return null;
+  try {
+    const [rows] = await db.execute(`SELECT * FROM Respondent WHERE email = ?`, [
+      email.toLowerCase(),
+    ]);
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error("Server: failed to query user by email", error);
     return null;
   }
 }
@@ -96,6 +105,187 @@ async function updateUserPasswordByEmail(email, newPassword) {
     console.error("Server: failed to update password", error);
     return false;
   }
+}
+
+async function listAdminUsers() {
+  const [rows] = await db.execute(
+    `SELECT id, firstname, lastname, mobile, email, status
+     FROM Respondent
+     WHERE role = 'ADMIN'
+     ORDER BY id DESC`
+  );
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    firstName: row.firstname || "",
+    lastName: row.lastname || "",
+    mobile: row.mobile || "",
+    email: row.email || "",
+    status: row.status || "Active",
+  }));
+}
+
+async function createAdminUser({ firstName, lastName, mobile, email, password }) {
+  const [result] = await db.execute(
+    `INSERT INTO Respondent (firstname, lastname, mobile, email, password, role, status)
+     VALUES (?, ?, ?, ?, ?, 'ADMIN', 'Active')`,
+    [firstName, lastName, mobile, email.toLowerCase(), password]
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
+}
+
+async function updateAdminUserById(id, payload) {
+  const fields = [];
+  const values = [];
+
+  if (payload.firstName !== undefined) {
+    fields.push("firstname = ?");
+    values.push(String(payload.firstName || "").trim());
+  }
+
+  if (payload.lastName !== undefined) {
+    fields.push("lastname = ?");
+    values.push(String(payload.lastName || "").trim());
+  }
+
+  if (payload.mobile !== undefined) {
+    fields.push("mobile = ?");
+    values.push(String(payload.mobile || "").trim());
+  }
+
+  if (payload.email !== undefined) {
+    fields.push("email = ?");
+    values.push(String(payload.email || "").trim().toLowerCase());
+  }
+
+  if (payload.status !== undefined) {
+    fields.push("status = ?");
+    values.push(payload.status);
+  }
+
+  if (fields.length === 0) return false;
+
+  values.push(Number(id));
+
+  const [result] = await db.execute(
+    `UPDATE Respondent
+     SET ${fields.join(", ")}
+     WHERE id = ? AND role = 'ADMIN'`,
+    values
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
+}
+
+async function deleteAdminUserById(id) {
+  const [result] = await db.execute(
+    `DELETE FROM Respondent WHERE id = ? AND role = 'ADMIN'`,
+    [Number(id)]
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
+}
+
+function isAdminRole(role) {
+  return String(role || "").trim().toUpperCase() === "ADMIN";
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdminRole(req?.auth?.role)) {
+    return res.status(403).json({
+      success: false,
+      message: "Only admin users can access this resource.",
+    });
+  }
+  next();
+}
+
+function normalizeStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (normalized === "inactive") return "Inactive";
+  return "Active";
+}
+
+
+async function listRespondents() {
+  const [rows] = await db.execute(
+    `SELECT id, firstname, lastname, mobile, email, status
+     FROM Respondent
+     WHERE role = 'RESPONDENT'
+     ORDER BY id DESC`
+  );
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    firstName: row.firstname || "",
+    lastName: row.lastname || "",
+    mobile: row.mobile || "",
+    email: row.email || "",
+    status: row.status || "Active",
+  }));
+}
+
+async function createRespondent({ firstName, lastName, mobile, email, password }) {
+  const [result] = await db.execute(
+    `INSERT INTO Respondent (firstname, lastname, mobile, email, password, role, status)
+     VALUES (?, ?, ?, ?, ?, 'RESPONDENT', 'Active')`,
+    [firstName, lastName, mobile, email.toLowerCase(), password]
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
+}
+
+async function updateRespondentById(id, payload) {
+  const fields = [];
+  const values = [];
+
+  if (payload.firstName !== undefined) {
+    fields.push("firstname = ?");
+    values.push(String(payload.firstName || "").trim());
+  }
+
+  if (payload.lastName !== undefined) {
+    fields.push("lastname = ?");
+    values.push(String(payload.lastName || "").trim());
+  }
+
+  if (payload.mobile !== undefined) {
+    fields.push("mobile = ?");
+    values.push(String(payload.mobile || "").trim());
+  }
+
+  if (payload.email !== undefined) {
+    fields.push("email = ?");
+    values.push(String(payload.email || "").trim().toLowerCase());
+  }
+
+  if (payload.status !== undefined) {
+    fields.push("status = ?");
+    values.push(payload.status);
+  }
+
+  if (fields.length === 0) return false;
+
+  values.push(Number(id));
+
+  const [result] = await db.execute(
+    `UPDATE Respondent
+     SET ${fields.join(", ")}
+     WHERE id = ? AND role = 'RESPONDENT'`,
+    values
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
+}
+
+async function deleteRespondentById(id) {
+  const [result] = await db.execute(
+    `DELETE FROM Respondent WHERE id = ? AND role = 'RESPONDENT'`,
+    [Number(id)]
+  );
+
+  return Number(result?.affectedRows || 0) > 0;
 }
 
 // Row indices (0-based) that contain questions, mapped to xlsx D-column cell refs
@@ -335,6 +525,279 @@ app.post("/api/auth/login", async (req, res) => {
       expiresAt,
     },
   });
+});
+
+app.get("/api/auth/admins", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const admins = await listAdminUsers();
+    return res.json({ success: true, data: admins });
+  } catch (error) {
+    console.error("Server: failed to list admins", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load admins.",
+    });
+  }
+});
+
+app.post("/api/auth/admins", requireAuth, requireAdmin, async (req, res) => {
+  const { firstName, lastName, email, mobile, password } = req.body || {};
+
+  const normalizedFirstName = String(firstName || "").trim();
+  const normalizedLastName = String(lastName || "").trim();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedMobile = String(mobile || "").trim();
+  const normalizedPassword = String(password || "");
+
+  if (
+    !normalizedFirstName ||
+    !normalizedLastName ||
+    !normalizedEmail ||
+    !normalizedMobile ||
+    !normalizedPassword
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "First name, last name, email, mobile and password are required.",
+    });
+  }
+
+  const existingUser = await findAnyUserByEmail(normalizedEmail);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "User with this email already exists.",
+    });
+  }
+
+  try {
+    const created = await createAdminUser({
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      email: normalizedEmail,
+      mobile: normalizedMobile,
+      password: normalizedPassword,
+    });
+
+    if (!created) {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create admin user.",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Admin user created successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to create admin", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create admin user.",
+    });
+  }
+});
+
+app.put("/api/auth/admins/:id", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid admin id." });
+  }
+
+  const payload = {
+    firstName: req.body?.firstName,
+    lastName: req.body?.lastName,
+    mobile: req.body?.mobile,
+    email: req.body?.email,
+    status: req.body?.status !== undefined ? normalizeStatus(req.body.status) : undefined,
+  };
+
+  try {
+    const updated = await updateAdminUserById(id, payload);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin user not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Admin user updated successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to update admin", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update admin user.",
+    });
+  }
+});
+
+app.delete("/api/auth/admins/:id", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid admin id." });
+  }
+
+  try {
+    const deleted = await deleteAdminUserById(id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin user not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Admin user deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to delete admin", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete admin user.",
+    });
+  }
+});
+
+
+app.get("/api/auth/respondents", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const respondents = await listRespondents();
+    return res.json({ success: true, data: respondents });
+  } catch (error) {
+    console.error("Server: failed to list respondents", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load respondents.",
+    });
+  }
+});
+
+app.post("/api/auth/respondents", requireAuth, requireAdmin, async (req, res) => {
+  const { firstName, lastName, email, mobile, password } = req.body || {};
+
+  const normalizedFirstName = String(firstName || "").trim();
+  const normalizedLastName = String(lastName || "").trim();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedMobile = String(mobile || "").trim();
+  const normalizedPassword = String(password || "");
+
+  if (
+    !normalizedFirstName ||
+    !normalizedLastName ||
+    !normalizedEmail ||
+    !normalizedMobile ||
+    !normalizedPassword
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "First name, last name, email, mobile and password are required.",
+    });
+  }
+
+  const existingUser = await findAnyUserByEmail(normalizedEmail);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: "User with this email already exists.",
+    });
+  }
+
+  try {
+    const created = await createRespondent({
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      email: normalizedEmail,
+      mobile: normalizedMobile,
+      password: normalizedPassword,
+    });
+
+    if (!created) {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to create respondent.",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Respondent created successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to create respondent", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create respondent.",
+    });
+  }
+});
+
+app.put("/api/auth/respondents/:id", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid respondent id." });
+  }
+
+  const payload = {
+    firstName: req.body?.firstName,
+    lastName: req.body?.lastName,
+    mobile: req.body?.mobile,
+    email: req.body?.email,
+    status: req.body?.status !== undefined ? normalizeStatus(req.body.status) : undefined,
+  };
+
+  try {
+    const updated = await updateRespondentById(id, payload);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Respondent not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Respondent updated successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to update respondent", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update respondent.",
+    });
+  }
+});
+
+app.delete("/api/auth/respondents/:id", requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid respondent id." });
+  }
+
+  try {
+    const deleted = await deleteRespondentById(id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Respondent not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Respondent deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Server: failed to delete respondent", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete respondent.",
+    });
+  }
 });
 
 app.post("/api/auth/forgot-password", async (req, res) => {
