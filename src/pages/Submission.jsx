@@ -6,13 +6,13 @@ import { useNavigate } from "react-router-dom";
 
 
 const STATUS_COLORS = {
-  completed: "#22c55e",
+  submitted: "#22c55e",
   drafted: "#f59e0b",
   notStarted: "#ef4444",
 };
 
 const STATUS_LABELS = {
-  completed: "Completed",
+  submitted: "Submitted",
   drafted: "Drafted",
   notStarted: "Not Started",
 };
@@ -42,7 +42,7 @@ function classifySubmission(row) {
   const totalQuestions = questions.length || 0;
 
   if (totalQuestions > 0 && answeredCount >= totalQuestions) {
-    return "completed";
+    return "submitted";
   }
 
   if (answeredCount > 0) {
@@ -153,6 +153,7 @@ export default function Submission() {
   const summary = useMemo(() => {
     const statusByRespondent = new Map();
     const startedRespondents = new Set();
+    const draftedRespondents = new Set();
 
     submissions.forEach((row) => {
       const respondentKey = normalizeText(row?.respondent);
@@ -163,9 +164,9 @@ export default function Submission() {
       const nextStatus = classifySubmission(row);
       const currentStatus = statusByRespondent.get(respondentKey);
 
-      if (currentStatus === "completed") return;
-      if (nextStatus === "completed") {
-        statusByRespondent.set(respondentKey, "completed");
+      if (currentStatus === "submitted") return;
+      if (nextStatus === "submitted") {
+        statusByRespondent.set(respondentKey, "submitted");
         return;
       }
       if (!currentStatus || currentStatus === "notStarted") {
@@ -173,24 +174,32 @@ export default function Submission() {
       }
     });
 
-    const completed = Array.from(statusByRespondent.values()).filter((status) => status === "completed").length;
+    drafts.forEach((row) => {
+      const respondentKey = normalizeText(row?.respondent_name);
+      if (respondentKey) {
+        draftedRespondents.add(respondentKey);
+      }
+    });
+
+    const submitted = Array.from(statusByRespondent.values()).filter((status) => status === "submitted").length;
     const drafted = drafts.length;
     const respondentNames = respondents.map(getRespondentName).filter(Boolean).map(normalizeText);
     const respondentCount = new Set(respondentNames).size;
-    const notStarted = Math.max(respondentCount - startedRespondents.size, 0);
+    const activeRespondents = new Set([...startedRespondents, ...draftedRespondents]);
+    const notStarted = Math.max(respondentCount - activeRespondents.size, 0);
 
     return {
-      completed,
+      submitted,
       drafted,
       notStarted,
-      total: completed + drafted + notStarted,
+      total: submitted + drafted + notStarted,
       respondentCount,
       startedCount: startedRespondents.size,
     };
   }, [respondents, submissions, drafts]);
 
   const notStartedRespondents = useMemo(() => {
-    // Respondents who completed
+    // Respondents who submitted
     const completedSet = new Set(
       submissions.map((item) => normalizeText(item.respondent))
     );
@@ -325,13 +334,34 @@ export default function Submission() {
     return activeDir === "asc" ? " ▲" : " ▼";
   };
 
+  const onStatusClick = (statusKey) => {
+    switch (statusKey) {
+      case "submitted":
+        navigate("/dash-submissions");
+        break;
+
+      case "drafted":
+        setDraftCurrentPage(1);
+        setShowDraftModal(true);
+        break;
+
+      case "notStarted":
+        setNotStartedCurrentPage(1);
+        setShowNotStartedModal(true);
+        break;
+
+      default:
+        break;
+    }
+  };
+
   const chartData = useMemo(
     () => [
-      { key: "completed", label: STATUS_LABELS.completed, value: summary.completed, color: STATUS_COLORS.completed },
+      { key: "submitted", label: STATUS_LABELS.submitted, value: summary.submitted, color: STATUS_COLORS.submitted },
       { key: "drafted", label: STATUS_LABELS.drafted, value: summary.drafted, color: STATUS_COLORS.drafted },
       { key: "notStarted", label: STATUS_LABELS.notStarted, value: summary.notStarted, color: STATUS_COLORS.notStarted },
     ],
-    [summary.completed, summary.drafted, summary.notStarted]
+    [summary.submitted, summary.drafted, summary.notStarted]
   );
 
   return (
@@ -339,7 +369,7 @@ export default function Submission() {
       <div className="mx-auto max-w-6xl overflow-hidden rounded-[18px] bg-white shadow-[0_18px_42px_rgba(31,45,63,0.14)]">
         <header className="bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-6 py-6 text-center text-white">
           <h1 className="text-2xl font-bold md:text-3xl">Assessment Submission Summary</h1>
-          <p className="mt-1 text-sm text-white/75">Completed, drafted, and not started assessments in one view</p>
+          <p className="mt-1 text-sm text-white/75">submitted, drafted, and not started assessments in one view</p>
         </header>
 
         <div className="grid gap-6 px-6 py-6 lg:grid-cols-[360px_1fr] lg:items-center">
@@ -368,28 +398,14 @@ export default function Submission() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={chartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={120} innerRadius={80}
-                        onClick={(data) => {
-                          switch (data.key) {
-                            case "completed":
-                              navigate("/dash-submissions");
-                              break;
-
-                            case "drafted":
-                              setDraftCurrentPage(1);
-                              setShowDraftModal(true);
-                              break;
-
-                            case "notStarted":
-                              setNotStartedCurrentPage(1);
-                              setShowNotStartedModal(true);
-                              break;
-
-                            default:
-                              break;
-                          }
-                        }}>
+                      >
                         {chartData.map((entry) => (
-                          <Cell key={entry.key} fill={entry.color} style={{ cursor: "pointer" }} />
+                          <Cell
+                            key={entry.key}
+                            fill={entry.color}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => onStatusClick(entry.key)}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -531,11 +547,11 @@ export default function Submission() {
                           DraftDate{sortIndicator(draftSortKey, draftSortDir, "updated_at")}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-left font-semibold">
+                      {/* <th className="px-6 py-4 text-left font-semibold">
                         <button type="button" onClick={() => onDraftSort("assessment_type")}>
                           Assessment{sortIndicator(draftSortKey, draftSortDir, "assessment_type")}
                         </button>
-                      </th>
+                      </th> */}
                       <th className="px-6 py-4 text-center font-semibold">Status </th>
                     </tr>
                   </thead>
@@ -548,7 +564,7 @@ export default function Submission() {
                         <td className="px-6 py-5"> {draft.mobile}  </td>
                         <td className="px-6 py-5">  {draft.email} </td>
                         <td className="px-6 py-5">{formatDate(draft.updated_at)}  </td>
-                        <td className="px-6 py-5"> {draft.assessment_type} </td>
+                        {/* <td className="px-6 py-5"> {draft.assessment_type} </td> */}
                         <td className="px-6 py-5 text-center">
                           <span className="rounded-full bg-yellow-100 px-4 py-1 text-sm font-medium text-yellow-700"> Draft  </span>
                         </td>

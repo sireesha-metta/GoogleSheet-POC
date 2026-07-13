@@ -427,16 +427,16 @@ function Diagnostic() {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Answered</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{answeredCount}/{questions.length}</h3>
               </div>
-              <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
+              {/* <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{totalScore}</h3>
-              </div>
+              </div> */}
               <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weight</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</h3>
               </div>
               <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weighted</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score-Auto</p>
                 <h3 className="mt-4 text-3xl font-semibold text-yellow-300">{totalWeightedScore}</h3>
               </div>
             </div>

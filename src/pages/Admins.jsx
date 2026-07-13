@@ -338,7 +338,7 @@ const Admins = () => {
           <button type="button" onClick={loadAdmins}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" >Refresh
           </button>
-          <button type="button" onClick={() => setShowAdminModal(true)}
+          <button type="button" onClick={openAdminModal}
             className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600">
             Create Admin
           </button>
@@ -675,9 +675,13 @@ const Admins = () => {
                   value={adminForm.password}
                   onChange={(e) => handleAdminFormChange("password", e.target.value)}
                   error={adminErrors.password}
-                  showErrorInPlaceholder={true}
+                  showErrorInPlaceholder={false}
                 />
               </div>
+
+              {/* <p className="text-xs text-white/80">
+                Password must be at least 8 characters and include uppercase, lowercase, and a number.
+              </p> */}
 
               <div className="flex justify-center gap-4 pt-2">
                 <button

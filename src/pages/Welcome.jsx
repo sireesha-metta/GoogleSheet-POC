@@ -36,7 +36,7 @@ export default function Welcome() {
         <div className="mt-10 rounded-3xl border border-yellow-400/25 bg-slate-950/80 p-8 shadow-xl shadow-yellow-500/10">
           <h2 className="text-2xl font-semibold text-white">After Completion</h2>
           <ul className="mt-5 space-y-3 text-slate-300">
-            <li>✓ Your assessment has been submitted successfully.</li>
+            <li>✓ Once assessment has been submitted, it will automatically update in Google-Sheet.</li>
             <li>✓ Responses have been securely recorded and synchronized with the assessment system.</li>
             <li>✓ Lorraine will review your results with you during your next coaching session.</li>
           </ul>

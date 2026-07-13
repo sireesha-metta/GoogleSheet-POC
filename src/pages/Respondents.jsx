@@ -13,8 +13,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { PencilSquareIcon,TrashIcon,CheckIcon,XMarkIcon,UserIcon,PhoneIcon,EnvelopeIcon,LockClosedIcon,QuestionMarkCircleIcon,
   EyeIcon,EyeSlashIcon,RocketLaunchIcon,} from "@heroicons/react/24/outline";
-import { deleteRespondent, getRespondents, updateRespondent } from "../services/Api";
-import { registerUser } from "../utils/auth";
+import { createRespondent, deleteRespondent, getRespondents, updateRespondent } from "../services/Api";
+import { getUserRole } from "../utils/auth";
 import { validators } from "../utils/validation";
 import { INITIAL_REGISTER_ERRORS, INITIAL_REGISTER_FORM } from "../types/register.types";
 import FormInput from "../component/FormInput";
@@ -38,6 +38,7 @@ const SORT_LABELS = {
 };
 
 const Respondents = () => {
+  const isAdmin = getUserRole() === "admin";
   const [respondents, setRespondents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -267,10 +268,16 @@ const Respondents = () => {
   };
 
   const handleCreateRespondent = async () => {
+    if (!isAdmin) {
+      setError("Only admin can create respondents.");
+      return;
+    }
+
     const isValid = validateCreateForm(createForm);
     if (!isValid) return;
 
     setCreateBusy(true);
+    setError("");
 
     const payload = {
       ...createForm,
@@ -280,7 +287,7 @@ const Respondents = () => {
       mobile: String(createForm.mobile || "").trim().replace(/\D/g, "").slice(-10),
     };
 
-    const result = await registerUser(payload);
+    const result = await createRespondent(payload);
     if (!result.success) {
       setCreateBusy(false);
       setError(result.message || "Unable to create respondent.");
@@ -300,8 +307,18 @@ const Respondents = () => {
           <button type="button"   onClick={loadRespondents}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" >Refresh
           </button>
-          <button type="button" onClick={() => setShowCreateModal(true)}
-            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600">
+          <button
+            type="button"
+            onClick={() => {
+              if (!isAdmin) {
+                setError("Only admin can create respondents.");
+                return;
+              }
+              setShowCreateModal(true);
+            }}
+            disabled={!isAdmin}
+            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
             Create Respondent
           </button>
         </div>

@@ -48,6 +48,26 @@ export async function getRespondents() {
 	}
 }
 
+export async function createRespondent(payload) {
+	try {
+		const response = await authFetch("/api/auth/respondents", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(payload || {}),
+		});
+
+		return parseResponse(response);
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || "Unable to create respondent.",
+			data: null,
+		};
+	}
+}
+
 export async function updateAdmin(id, payload) {
 	try {
 		const response = await authFetch(`/api/auth/admins/${id}`, {
