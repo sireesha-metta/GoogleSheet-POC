@@ -229,7 +229,7 @@ export default function Login() {
 
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/45 to-slate-950/80" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center justify-between gap-8 px-4            py-8 md:px-10 lg:px-14">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center justify-between gap-8 px-4 py-8 md:px-10 lg:px-14">
         <div className="hidden max-w-[420px] md:block">
           <h3 className="font-serif text-2xl lg:text-2xl leading-tight text-white drop-shadow-xl">
             <span className="inline-flex items-center rounded-full border border-yellow-400/25 bg-yellow-500/10 px-5 py-2 text-yellow-200 shadow-sm mb-10">
@@ -277,15 +277,8 @@ export default function Login() {
               <div className="relative">
                 <UserIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
 
-                <FormInput
-                  type="text"
-                  value={email}
-                  placeholder="Email / Phone number"
-                  autoComplete="username"
-                  error={errors.email}
-                  showErrorInPlaceholder={true}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
+                <FormInput type="text" value={email}  placeholder="Email / Phone number" autoComplete="username" error={errors.email} showErrorInPlaceholder={true}
+                  onChange={(e) => { setEmail(e.target.value);
                     setErrors((prev) => ({
                       ...prev,
                       email: "",
@@ -297,14 +290,8 @@ export default function Login() {
               <div className="relative">
                 <LockClosedIcon className="absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
 
-                <FormInput
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  placeholder="Password"
-                  error={errors.password}
-                  showErrorInPlaceholder={true}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
+                <FormInput type={showPassword ? "text" : "password"} value={password} placeholder="Password" error={errors.password} showErrorInPlaceholder={true}
+                  onChange={(e) => {setPassword(e.target.value);
                     setErrors((prev) => ({
                       ...prev,
                       password: "",
@@ -312,11 +299,7 @@ export default function Login() {
                   }}
                 />
 
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-10 -translate-y-1/2 text-white/95"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 right-10 -translate-y-1/2 text-white/95" >
                   {showPassword ? (
                     <EyeSlashIcon className="h-6 w-6" />
                   ) : (
@@ -327,33 +310,23 @@ export default function Login() {
 
               <div className="mt-4 flex flex-col gap-4 text-sm md:text-base">
                 <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setShowRegister(true)}
-                    className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
-                  >
+                  <button type="button" onClick={() => setShowRegister(true)} className="text-slate-200 text-sm font-medium transition hover:text-yellow-300">
                     Register Here!
                   </button>
 
-                  <button
-                    type="button"
+                  <button type="button" className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
                     onClick={() => {
                       setShowForgotPassword(true);
                       setLoginInfoMessage("");
                       setForgotEmail(email);
                       setForgotErrors({ email: "", newPassword: "", confirmPassword: "" });
-                    }}
-                    className="text-slate-200 text-sm font-medium transition hover:text-yellow-300"
-                  >
+                    }} >
                     Forgot Password?
                   </button>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="mx-auto block w-full max-w-[260px] rounded-2xl bg-yellow-500 px-6 py-3 text-center text-base font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
-                >
+                <button type="submit" disabled={isSubmitting}
+                  className="mx-auto block w-full max-w-[260px] rounded-2xl bg-yellow-500 px-6 py-3 text-center text-base font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-70" >
                   {isSubmitting ? "Signing in..." : "Login"}
                 </button>
               </div>
@@ -467,13 +440,8 @@ export default function Login() {
 
               <div className="relative">
                 <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                <FormInput
-                  type="email"
-                  value={forgotEmail}
-                  placeholder="Registered Email Address"
-                  autoComplete="email"
-                  error={forgotErrors.email}
-                  showErrorInPlaceholder={true}
+                <FormInput type="email" value={forgotEmail}  placeholder="Registered Email Address" autoComplete="email"
+                  error={forgotErrors.email} showErrorInPlaceholder={true}
                   onChange={(e) => {
                     setForgotEmail(e.target.value);
                     setForgotErrors((prev) => ({ ...prev, email: "" }));
@@ -483,48 +451,30 @@ export default function Login() {
 
               <div className="relative">
                 <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                <FormInput
-                  type={showForgotPasswordText ? "text" : "password"}
-                  value={forgotNewPassword}
-                  placeholder="New Password"
-                  autoComplete="current-password"
-                  autocomplete="off"
-                  error={forgotErrors.newPassword}
-                  showErrorInPlaceholder={true}
+                <FormInput  type={showForgotPasswordText ? "text" : "password"} value={forgotNewPassword} placeholder="New Password"
+                  autoComplete="current-password" autocomplete="off" error={forgotErrors.newPassword} showErrorInPlaceholder={true}
                   onChange={(e) => {
                     setForgotNewPassword(e.target.value);
                     setForgotErrors((prev) => ({ ...prev, newPassword: "" }));
-                  }}
-                />
+                  }} />
 
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPasswordText((prev) => !prev)}
-                  className="absolute right-10 top-1/2 -translate-y-1/2 text-white/95"
-                >
+                <button type="button" onClick={() => setShowForgotPasswordText((prev) => !prev)} className="absolute right-10 top-1/2 -translate-y-1/2 text-white/95" >
                   {showForgotPasswordText ? <EyeSlashIcon className="h-6 w-6" /> : <EyeIcon className="h-6 w-6" />}
                 </button>
               </div>
 
               <div className="relative">
                 <QuestionMarkCircleIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
-                <FormInput
-                  type={showForgotPasswordText ? "text" : "password"}
-                  value={forgotConfirmPassword}
-                  placeholder="Confirm New Password"
-                  autoComplete="current-password"
-                  error={forgotErrors.confirmPassword}
-                  showErrorInPlaceholder={true}
+                <FormInput type={showForgotPasswordText ? "text" : "password"} value={forgotConfirmPassword} placeholder="Confirm New Password"
+                  autoComplete="current-password"  error={forgotErrors.confirmPassword} showErrorInPlaceholder={true}
                   onChange={(e) => {
                     setForgotConfirmPassword(e.target.value);
                     setForgotErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                  }}
-                />
+                  }} />
               </div>
 
               <div className="flex justify-center gap-4 pt-2">
-                <button
-                  type="button"
+                <button type="button" className="px-6 py-2 rounded-lg bg-gray-500 text-white"
                   onClick={() => {
                     setShowForgotPassword(false);
                     setForgotEmail("");
@@ -532,17 +482,11 @@ export default function Login() {
                     setForgotConfirmPassword("");
                     setForgotErrors({ email: "", newPassword: "", confirmPassword: "" });
                     setShowForgotPasswordText(false);
-                  }}
-                  className="px-6 py-2 rounded-lg bg-gray-500 text-white"
-                >
+                  }}  >
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isForgotSubmitting}
-                  className="inline-flex items-center gap-2 px-6 py-2 rounded-lg text-black font-semibold bg-gradient-to-b from-yellow-300 to-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
-                >
+                <button type="submit"  disabled={isForgotSubmitting} className="inline-flex items-center gap-2 px-6 py-2 rounded-lg text-black font-semibold bg-gradient-to-b from-yellow-300 to-yellow-400 disabled:cursor-not-allowed disabled:opacity-70" >
                   <PaperAirplaneIcon className="h-5 w-5" />
                   {isForgotSubmitting ? "Updating..." : "Update Password"}
                 </button>
@@ -551,11 +495,7 @@ export default function Login() {
           </div>
         </div>
       )}
-
-
     </div>
-
-
   );
 }
 

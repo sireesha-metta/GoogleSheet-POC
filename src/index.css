@@ -6,3 +6,12 @@ body,
   min-height: 100%;
   overflow-y: auto;
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.92) inset;
+  -webkit-text-fill-color: #f8fafc;
+  caret-color: #f8fafc;
+}

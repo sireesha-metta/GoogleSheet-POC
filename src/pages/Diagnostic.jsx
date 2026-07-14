@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  clearDiagnosticDraft,
-  fetchAuthProfile,
-  getAuthSession,
-  getQuestions,
-  loadDiagnosticDraft,
-  saveDiagnosticDraft,
-  submitDiagnostic,
+  clearDiagnosticDraft, fetchAuthProfile, getDiagnosticSubmissionStatus, getAuthSession,
+  getQuestions, loadDiagnosticDraft, saveDiagnosticDraft, submitDiagnostic,
 } from "../utils/auth";
 import AuthHeader from "../component/AuthHeader.jsx";
 
@@ -26,6 +21,7 @@ function Diagnostic() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [submissionSnapshot, setSubmissionSnapshot] = useState(null);
 
   const applyDraftData = (draftData, fallbackQuestionCount = 0) => {
     const draftRespondent = String(draftData.respondent || "").trim();
@@ -44,12 +40,33 @@ function Diagnostic() {
     let active = true;
 
     const initializeDiagnostic = async () => {
-      const [profileResult, questionResult] = await Promise.all([
+      const [statusResult, profileResult, questionResult] = await Promise.all([
+        getDiagnosticSubmissionStatus(),
         fetchAuthProfile(),
         getQuestions(),
       ]);
 
       if (!active) return;
+
+      if (statusResult.success && statusResult.submitted) {
+        const submittedData = statusResult.data || {};
+        if (questionResult.success && Array.isArray(questionResult.data)) {
+          setQuestions(questionResult.data);
+        }
+        if (submittedData.answersByRow) {
+          setAnswers(submittedData.answersByRow);
+        }
+        if (submittedData.respondent) {
+          setRespondent(String(submittedData.respondent));
+        }
+        if (submittedData.mobile) {
+          setMobile(String(submittedData.mobile));
+        }
+        setSubmissionSnapshot(submittedData);
+        setShowSummary(true);
+        setLoading(false);
+        return;
+      }
 
       if (profileResult.success && profileResult.profile) {
         const profile = profileResult.profile;
@@ -113,14 +130,14 @@ function Diagnostic() {
   }, []);
 
 
-  useEffect(() => {
-    if (showSummary) {
-      const timer = setTimeout(() => {
-        navigate("/welcome");
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSummary, navigate]);
+  // useEffect(() => {
+  //   if (showSummary) {
+  //     const timer = setTimeout(() => {
+  //       navigate("/welcome");
+  //     }, 5000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [showSummary, navigate]);
 
   const answeredCount = questions.filter(
     (q) => (answers[q.rowIndex] || "").trim() !== "").length;
@@ -138,6 +155,17 @@ function Diagnostic() {
     (sum, q) => sum + q.weightedScore,
     0
   );
+
+  const summaryResponses = submissionSnapshot?.questionResponses?.length
+    ? submissionSnapshot.questionResponses
+    : questionMetrics
+      .filter((q) => (q.selectedAnswer || "").trim() !== "")
+      .map((q) => ({
+        rowIndex: q.rowIndex,
+        number: q.number,
+        question: q.question,
+        answer: q.selectedAnswer,
+      }));
 
   const buildDraftPayload = () => ({
     respondent: respondent.trim() || "Anonymous",
@@ -210,10 +238,31 @@ function Diagnostic() {
     };
 
     const result = await submitDiagnostic(payload);
+    console.log("submitDiagnostic result:", result);
 
     if (result.success) {
       await clearDiagnosticDraft();
       setMessage({ type: "success", text: result.message });
+      setSubmissionSnapshot({
+        respondent: payload.respondent,
+        mobile: payload.mobile,
+        submittedAt: payload.submittedAt,
+        totalScore: payload.totalScore,
+        totalWeightedScore: payload.totalWeightedScore,
+        answersByRow: payload.answersByRow,
+        questionResponses: payload.questionResponses,
+      });
+      setShowSummary(true);
+    } else if (result.alreadySubmitted) {
+      const submittedData = result.data || {};
+      if (submittedData.respondent) {
+        setRespondent(String(submittedData.respondent));
+      }
+      if (submittedData.mobile) {
+        setMobile(String(submittedData.mobile));
+      }
+      setSubmissionSnapshot(submittedData);
+      setMessage({ type: "success", text: result.message || "Assessment already submitted." });
       setShowSummary(true);
     } else {
       setMessage({ type: "error", text: result.message });
@@ -260,57 +309,107 @@ function Diagnostic() {
   };
 
   if (showSummary) {
+    const summaryRespondent = submissionSnapshot?.respondent || respondent || "Leader";
+    const summaryTotalScore = Number(submissionSnapshot?.totalScore ?? totalScore ?? 0);
+    const summaryWeightedScore = Number(submissionSnapshot?.totalWeightedScore ?? totalWeightedScore ?? 0);
+
     return (
-      <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 py-16">
+      <div className="min-h-screen bg-[#0F172A] text-white">
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-[#0F172A] via-[#111827] to-[#1E293B]" />
+
+        <header className="sticky top-0 z-50 text-black">
           <AuthHeader />
-          <div className="rounded-[32px] border border-yellow-400/20 bg-slate-900/95 p-10 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-6 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-yellow-500/15 text-yellow-300 shadow-lg shadow-yellow-500/20">
-                <span className="text-4xl">✓</span>
-              </div>
-              <h2 className="text-4xl font-serif font-semibold text-white">
-                Thank you, {respondent || 'Leader'}
-              </h2>
-              <p className="max-w-2xl text-slate-300 text-lg">
-                Your Leadership Diagnostic has been recorded successfully. You will be redirected to the welcome screen shortly.
-              </p>
+        </header>
+
+        <main className="mx-auto flex max-w-5xl flex-col items-center px-6 py-12">
+
+          <div className="flex h-15 w-15 items-center justify-center rounded-full border border-yellow-300/30 bg-yellow-400/10 shadow-lg shadow-yellow-400/20">
+            <span className="text-3xl text-yellow-200">✓</span>
+          </div>
+
+          <h1 className="mt-4 text-center text-3xl font-serif font-bold">
+            Thank You , {""}
+            <span className=" text-yellow-200"> {summaryRespondent} </span>
+          </h1>
+
+          <p className="mt-3 max-w-xl text-center text-lg leading-8 text-slate-200">
+            Your Leadership Reset Diagnostic has been submitted successfully.
+            Your responses have been recorded and will help generate meaningful
+            leadership insights.
+          </p>
+
+          <div className="mt-6 grid w-full gap-2 md:grid-cols-2">
+            <div className="rounded-3xl border border-slate-400 bg-[#1E293B] p-6 shadow-lg transition hover:-translate-y-1 hover:border-yellow-400/40">
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-100">Total Score </p>
+              <h2 className="mt-2 text-4xl font-bold text-white">{summaryTotalScore}</h2>
             </div>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/10">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Total Score</p>
-                <h3 className="mt-4 text-5xl font-semibold text-white">{totalScore}</h3>
-              </div>
-              <div className="rounded-3xl border border-yellow-400/15 bg-slate-950/80 p-6 shadow-xl shadow-yellow-500/10">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-400">Weighted Score</p>
-                <h3 className="mt-4 text-5xl font-semibold text-yellow-300">{totalWeightedScore}</h3>
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-3xl border border-yellow-400/10 bg-slate-950/85 p-6 text-left shadow-lg shadow-yellow-500/10">
-              <p className="text-slate-300">
-                Redirecting to the welcome page in 5 seconds. If you would like to continue, please wait or return manually.
-              </p>
+            <div className="rounded-3xl border border-slate-400 bg-[#1E293B] p-6 shadow-lg transition hover:-translate-y-1 hover:border-yellow-400/40">
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-100">Weighted Score</p>
+              <h2 className="mt-2 text-4xl font-bold text-yellow-300">{summaryWeightedScore} /100</h2>
             </div>
           </div>
-        </div>
+
+          <div className="mt-10 rounded-3xl border border-slate-600 bg-[#1E293B] p-8">
+
+            <h2 className="mb-6 text-2xl font-semibold text-yellow-300">{summaryRespondent} Responses </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-600 text-left">
+                    <th className="p-3 text-yellow-300">#</th>
+                    <th className="p-3 text-yellow-300"> Question </th>
+                    <th className="p-3 text-yellow-300">Selected Response</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryResponses.map((q) => (
+                    <tr key={q.rowIndex} className="border-b border-slate-700 hover:bg-slate-800/40"   >
+                      <td className="p-3">{q.number}</td>
+                      <td className="p-3">{q.question}</td>
+                      <td className="p-3">{q.answer ?? submissionSnapshot?.answersByRow?.[q.rowIndex] ?? "-"}  </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* <div className="mt-8 w-full rounded-3xl border border-slate-400 bg-[#1E293B] p-8">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-slate-200"> Redirecting to Welcome Page...  </span>
+              <span className="text-yellow-200 font-semibold"> 5 seconds </span>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-slate-700">
+              <div className="h-full w-full animate-pulse rounded-full bg-yellow-400"></div>
+            </div>
+          </div> */}
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10">
+    <div className="min-h-screen flex flex-col bg-[#0F172A] text-white">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#111827] to-[#1E293B]" />
+
+      <div className=" sticky top-0 z-50 text-black">
         <AuthHeader />
-        <div className="rounded-[32px] border border-yellow-400/20 bg-slate-900/95 p-8 shadow-[0_35px_120px_-30px_rgba(250,204,21,0.45)] backdrop-blur-sm">
-          <div className="flex flex-col gap-6">
+      </div>
+
+      <main className="flex-1 relative z-10 mx-auto w-full max-w-6xl px-6 py-8">
+        {loading ? (
+          <div className="flex min-h-[70vh] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent"></div>
+              <p className="mt-4 text-slate-300">Loading assessment...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="relative z-10 mx-auto max-w-6xl px-6 py-8 flex flex-col gap-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                {/* <p className="text-sm uppercase tracking-[0.28em] text-yellow-300/90">Diagnostic</p> */}
-
                 <span className="inline-flex items-center rounded-full border border-yellow-400/25 bg-yellow-500/10 px-5 py-2 text-yellow-200 shadow-sm">
                   LEAN IN COACHING
                 </span>
@@ -321,56 +420,39 @@ function Diagnostic() {
                   Reflect on your leadership choices and capture insights that matter.
                 </p>
               </div>
-              {/* <span className="inline-flex items-center rounded-full border border-yellow-400/25 bg-yellow-500/10 px-5 py-2 text-yellow-200 shadow-sm">
-                LEAN IN COACHING
-              </span> */}
             </div>
 
             <div className="grid gap-4 md:grid-cols-4">
-              <div className="rounded-3xl  border border-white/40 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+              <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Answered</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{answeredCount}/{questions.length}</h3>
               </div>
-              <div className="rounded-3xl border border-white/40 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+              {/* <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{totalScore}</h3>
-              </div>
-              <div className="rounded-3xl border border-white/40 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
+              </div> */}
+              <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weight</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</h3>
               </div>
-              <div className="rounded-3xl border border-white/40 bg-slate-950/85 p-6 shadow-[0_20px_80px_-40px_rgba(250,204,21,0.45)]">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weighted</p>
+              <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score-Auto</p>
                 <h3 className="mt-4 text-3xl font-semibold text-yellow-300">{totalWeightedScore}</h3>
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/40 bg-slate-950/85 p-6 shadow-xl shadow-yellow-500/10">
+            <div className="rounded-[28px] border border-slate-700 bg-[#1E293B] p-8 shadow-lg">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-semibold uppercase tracking-[0.2em] text-yellow-300/90 mb-3">
-                    Respondent Name
-                  </label>
-                  <input
-                    type="text"
-                    value={respondent}
-                    placeholder="Enter respondent name"
-                    onChange={(e) => setRespondent(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-3 text-white placeholder:text-slate-500 shadow-sm outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
-                  />
+                  <label className="block text-sm font-semibold uppercase tracking-[0.2em] text-yellow-300/90 mb-3">Respondent Name</label>
+                  <input type="text" value={respondent} placeholder="Enter respondent name" onChange={(e) => setRespondent(e.target.value)}
+                    disabled className="w-full rounded-2xl border border-slate-700 bg-slate-700/60 px-4 py-3 text-slate-300 cursor-not-allowed" />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold uppercase tracking-[0.2em] text-yellow-300/90 mb-3">
-                    Mobile Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={mobile}
-                    placeholder="Enter mobile number"
-                    onChange={(e) => setMobile(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-3 text-white placeholder:text-slate-500 shadow-sm outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
-                  />
+                  <label className="block text-sm font-semibold uppercase tracking-[0.2em] text-yellow-300/90 mb-3">Mobile Number</label>
+                  <input type="tel" value={mobile} placeholder="Enter mobile number" disabled onChange={(e) => setMobile(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-700 bg-slate-700/60 px-4 py-3 text-slate-300 cursor-not-allowed" />
                 </div>
               </div>
             </div>
@@ -382,51 +464,33 @@ function Diagnostic() {
             )}
 
             {!loading && (
-              <div className="grid gap-6 md:grid-cols-2 items-stretch">
+              <div>
                 {questionMetrics.map((q) => (
-                  // <div key={q.rowIndex} className="rounded-[28px] border border-yellow-400/10 bg-slate-950/85 p-6 shadow-lg shadow-yellow-500/5 transition hover:-translate-y-0.5 hover:shadow-xl">
+                  <div key={q.rowIndex} className="mb-6 flex min-h-[250px] flex-col rounded-[28px] border border-slate-700 bg-gradient-to-br from-[#111827] to-[#1E293B] p-8 transition-all duration-300 hover:border-yellow-400/40 hover:shadow-xl hover:shadow-yellow-500/10"  >
 
-                  <div key={q.rowIndex} className="flex min-h-[250px] flex-col rounded-[28px] border border-yellow-400/10 bg-slate-950/85 p-6 shadow-lg shadow-yellow-500/5 transition hover:-translate-y-0.5 hover:shadow-xl"  >
-                    {/* <div className="flex flex-col gap-4">
-                      <p className="text-lg font-medium text-white">
-                        <span className="font-semibold text-yellow-300">{q.number}.</span> {q.question}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-sm text-slate-400">
-                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">Score: {q.score}</span>
-                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">Weight: {q.weight}</span>
-                        <span className="rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-yellow-200">Weighted: {q.weightedScore}</span>
-                      </div>
-                    </div> */}
-
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col">
                       <p className="h-[72px] text-lg font-medium text-white">
                         <span className="font-semibold text-yellow-300">{q.number}.</span>
-                        {" "}
-                        {q.question}
+                        {" "}   {q.question}
                       </p>
 
                       <div className="flex flex-wrap gap-2 text-sm text-slate-400">
-                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">
-                          Score: {q.score}
+                        {/* <span className="rounded-full border border-slate-800/80 bg-[#0F172A] border-slate-600 px-3 py-1">
+                          Scores: {q.score}
+                        </span> */}
+                        <span className="rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-yellow-200">
+                          Score-auto: {q.weightedScore}
                         </span>
-                        <span className="rounded-full border border-slate-800/80 bg-slate-900/90 px-3 py-1">
+                        <span className="rounded-full border border-slate-800/80 bg-[#0F172A] border-slate-600 px-3 py-1">
                           Weight: {q.weight}
                         </span>
-                        <span className="rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-yellow-200">
-                          Weighted: {q.weightedScore}
-                        </span>
+
                       </div>
                     </div>
 
                     <select value={q.selectedAnswer}
-                     className="mt-auto w-full rounded-2xl border border-slate-700/70 bg-slate-900/90 px-4 py-3 text-white outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
-                      onChange={(e) =>
-                        setAnswers((prev) => ({
-                          ...prev,
-                          [q.rowIndex]: e.target.value,
-                        }))
-                      }                   
-                    >
+                      className="mt-auto w-full rounded-2xl border border-slate-700/70 bg-[#0F172A] border-slate-600 px-4 py-3 text-white outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/20"
+                      onChange={(e) => setAnswers((prev) => ({ ...prev, [q.rowIndex]: e.target.value, }))} >
                       <option value="">-- Select an answer --</option>
                       {q.options.map((opt) => (
                         <option key={opt} value={opt}>
@@ -440,12 +504,10 @@ function Diagnostic() {
             )}
 
             <div className="grid gap-4 md:grid-cols-2 mt-8">
-              <button onClick={handleSaveDraft} disabled={saving} className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm font-semibold 
-                text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50" >
+              <button onClick={handleSaveDraft} disabled={saving} className="rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-4 text-sm font-semibold text-slate-900 shadow-lg transition-all duration-300 hover:from-yellow-300 hover:to-amber-400 hover:scale-[1.02]" >
                 Save Draft
               </button>
-              <button onClick={handleSubmit} disabled={saving} className="rounded-2xl bg-yellow-500 px-6 py-4 text-sm 
-                font-semibold text-slate-950 shadow-lg shadow-yellow-500/20 transition hover:bg-yellow-400 disabled:opacity-50" >
+              <button onClick={handleSubmit} disabled={saving} className="rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-4 text-sm font-semibold text-slate-900 shadow-lg transition-all duration-300 hover:from-yellow-300 hover:to-amber-400 hover:scale-[1.02]" >
                 {saving ? "Publishing..." : "Publish Data"}
               </button>
             </div>
@@ -459,8 +521,8 @@ function Diagnostic() {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        )}
+      </main>
     </div >
   );
 }

@@ -301,6 +301,34 @@ export async function submitDiagnostic(payload) {
       body: JSON.stringify(payload),
     });
 
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+
+    if (contentType.includes("application/json")) {
+      const json = await response.json().catch(() => null);
+
+      if (!response.ok && json?.alreadySubmitted) {
+        return {
+          success: false,
+          alreadySubmitted: true,
+          message: json?.message || "Assessment already submitted.",
+          data: json?.data || null,
+        };
+      }
+
+      if (!response.ok || json?.success === false) {
+        return {
+          success: false,
+          message: json?.message || "Save failed.",
+        };
+      }
+
+      return {
+        success: true,
+        message: json?.message || "Saved to Google Sheet!",
+        data: json?.data || null,
+      };
+    }
+
     const text = await response.text();
     const normalized = String(text || "").trim().toLowerCase();
     const success =
@@ -317,6 +345,36 @@ export async function submitDiagnostic(payload) {
   } catch (error) {
     console.error("Error submitting diagnostic:", error);
     return { success: false, message: "Network error." };
+  }
+}
+
+export async function getDiagnosticSubmissionStatus() {
+  try {
+    const response = await authFetch("/api/submission-status", {
+      method: "GET",
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        submitted: false,
+        message: data?.message || "Unable to fetch submission status.",
+      };
+    }
+
+    return {
+      success: true,
+      submitted: Boolean(data?.submitted),
+      data: data?.data || null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      submitted: false,
+      message: error.message || "Unable to fetch submission status.",
+    };
   }
 }
 
@@ -420,5 +478,26 @@ export async function requestPasswordReset({ email, newPassword }) {
       success: false,
       message: "Unable to reach backend server.",
     };
+  }
+}
+
+
+export async function uploadFile(payload) {
+  try {
+    const response = await authFetch("/api/auth/upload", {
+      method: "POST",
+      headers: {
+      },
+      body: payload,
+    });
+
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to save file." };
+    }
+
+    return { success: true, message: data.message || "File uploaded successfully.", data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error." };
   }
 }

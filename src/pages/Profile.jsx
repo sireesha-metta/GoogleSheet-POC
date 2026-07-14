@@ -1,18 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate,useLocation  } from "react-router-dom";
 import { getAuthSession, updateAuthSession, logoutUser, fetchAuthProfile } from "../utils/auth";
 import FormInput from "../component/FormInput";
 import { validators } from "../utils/validation";
 import { changePassword, updateAuthProfile } from "../utils/auth";
-import {
-  UserIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  LockClosedIcon,
-  QuestionMarkCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-} from "@heroicons/react/24/outline";
+import { UserIcon,PhoneIcon,EnvelopeIcon,LockClosedIcon,QuestionMarkCircleIcon,EyeIcon,EyeSlashIcon,} from "@heroicons/react/24/outline";
+import { getDefaultAuthenticatedPath, getUserRole, isAuthenticated } from "../utils/auth";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -27,6 +20,9 @@ export default function Profile() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
+
+  const location = useLocation();
+  const role = getUserRole(); 
 
   useEffect(() => {
     const currentSession = getAuthSession();
@@ -202,6 +198,14 @@ export default function Profile() {
     navigate("/login", { replace: true });
   };
 
+  const handleBack = () => {
+  if (location.state?.from) {
+    navigate(location.state.from);
+  } else {
+    navigate(role === "admin" ? "/admin/dashboard" : "/welcome");
+  }
+};
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800" />
@@ -214,11 +218,8 @@ export default function Profile() {
               <p className="mt-3 text-slate-300">Update the displayed name shown across the app.</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => navigate("/welcome")}
-                className="rounded-full bg-slate-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
-              >
+              <button  type="button" onClick={handleBack}
+                className="rounded-full bg-slate-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700" >
                 Back
               </button>
               <button
