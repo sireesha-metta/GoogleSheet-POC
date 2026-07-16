@@ -24,97 +24,71 @@ function toAnswerTextOnly(v) {
 }
 
 function appendSubmissionLog(ss, data) {
-  var logSheet = ss.getSheetByName(LOG_TAB);
-  if (!logSheet) {
-    logSheet = ss.insertSheet(LOG_TAB);
+  // Always write row-wise submissions to ROW_LOG_TAB
+  var rowSheet = ss.getSheetByName(ROW_LOG_TAB);
+  if (!rowSheet) {
+    rowSheet = ss.insertSheet(ROW_LOG_TAB);
   }
 
-  var questionResponses = Array.isArray(data.questionResponses) ? data.questionResponses : [];
-  var hasQuestionTextPayload = questionResponses.length > 0;
-
-  if (hasQuestionTextPayload) {
-    var rowSheet = ss.getSheetByName(ROW_LOG_TAB);
-    if (!rowSheet) {
-      rowSheet = ss.insertSheet(ROW_LOG_TAB);
-    }
-
-    if (rowSheet.getLastRow() === 0) {
-      rowSheet.appendRow([
-        "Timestamp",
-        "Respondent",
-        "Question No",
-        "Question",
-        "Selected Answer",
-        "Score",
-        "Weight",
-      ]);
-    }
-
-    var submittedAt = valueOrEmpty(data.submittedAt || new Date().toISOString());
-    var respondent = valueOrEmpty(data.respondent || "Anonymous");
-    var totalScore = valueOrEmpty(data.totalScore);
-    var totalWeightedScore = valueOrEmpty(data.totalWeightedScore);
-
-    questionResponses.forEach(function (item, idx) {
-      rowSheet.appendRow([
-        submittedAt,
-        respondent,
-        valueOrEmpty(item.number || idx + 1),
-        valueOrEmpty(item.question),
-        toAnswerTextOnly(item.answer),
-        valueOrEmpty(item.score),
-        valueOrEmpty(item.weight),
-      ]);
-    });
-
+  if (rowSheet.getLastRow() === 0) {
     rowSheet.appendRow([
-      "",
-      "",
-      "",
-      "TOTALS",
-      "",
-      totalScore,
-      totalWeightedScore,
-    ]);
-
-    return;
-  }
-
-  // Backward-compatible fallback
-  if (logSheet.getLastRow() === 0) {
-    logSheet.appendRow([
       "Timestamp",
       "Respondent",
-      "Q1",
-      "Q2",
-      "Q3",
-      "Q4",
-      "Q5",
-      "Q6",
-      "Q7",
-      "Q8",
-      "Q9",
-      "Q10",
-      "Q11",
-      "Q12",
+      "Question No",
+      "Question",
+      "Selected Answer",
+      "Score",
+      "Weight",
     ]);
   }
 
-  logSheet.appendRow([
-    valueOrEmpty(data.submittedAt || new Date().toISOString()),
-    valueOrEmpty(data.respondent || "Anonymous"),
-    toAnswerTextOnly(data.q1),
-    toAnswerTextOnly(data.q2),
-    toAnswerTextOnly(data.q3),
-    toAnswerTextOnly(data.q4),
-    toAnswerTextOnly(data.q5),
-    toAnswerTextOnly(data.q6),
-    toAnswerTextOnly(data.q7),
-    toAnswerTextOnly(data.q8),
-    toAnswerTextOnly(data.q9),
-    toAnswerTextOnly(data.q10),
-    toAnswerTextOnly(data.q11),
-    toAnswerTextOnly(data.q12),
+  var questionResponses = Array.isArray(data.questionResponses) ? data.questionResponses.slice() : [];
+  // If questionResponses is empty, build from answersByRow using ANSWER_ROW_INDEXES
+  if (questionResponses.length === 0) {
+    var answersByRow = data.answersByRow || {};
+    for (var i = 0; i < ANSWER_ROW_INDEXES.length; i++) {
+      var rowIndex = ANSWER_ROW_INDEXES[i];
+      var value = "";
+      if (answersByRow.hasOwnProperty(String(rowIndex))) {
+        value = answersByRow[String(rowIndex)];
+      } else if (answersByRow.hasOwnProperty(rowIndex)) {
+        value = answersByRow[rowIndex];
+      }
+      questionResponses.push({
+        number: i + 1,
+        question: "",
+        answer: value,
+        score: 0,
+        weight: 0,
+      });
+    }
+  }
+
+  var submittedAt = valueOrEmpty(data.submittedAt || new Date().toISOString());
+  var respondent = valueOrEmpty(data.respondent || "Anonymous");
+  var totalScore = valueOrEmpty(data.totalScore);
+  var totalWeightedScore = valueOrEmpty(data.totalWeightedScore);
+
+  questionResponses.forEach(function (item, idx) {
+    rowSheet.appendRow([
+      submittedAt,
+      respondent,
+      valueOrEmpty(item.number || idx + 1),
+      valueOrEmpty(item.question || ""),
+      toAnswerTextOnly(item.answer),
+      valueOrEmpty(item.score),
+      valueOrEmpty(item.weight),
+    ]);
+  });
+
+  rowSheet.appendRow([
+    "",
+    "",
+    "",
+    "TOTALS",
+    "",
+    totalScore,
+    totalWeightedScore,
   ]);
 }
 

@@ -434,10 +434,6 @@ export default function Login() {
             </h2>
 
             <form onSubmit={handleForgotPassword} className="space-y-4">
-              {/* <p className="rounded-xl border border-white/15 bg-slate-900/40 p-3 text-sm text-slate-100">
-                Enter your registered email and set a new password to update it directly.
-              </p> */}
-
               <div className="relative">
                 <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
                 <FormInput type="email" value={forgotEmail}  placeholder="Registered Email Address" autoComplete="email"

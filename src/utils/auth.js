@@ -1,9 +1,6 @@
 const AUTH_STORAGE_KEY = "gspoc_auth_session";
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD
-    ? "https://leadership-assesment.onrender.com"
-    : "http://localhost:5000");
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+ (import.meta.env.PROD ? "https://leadership-assesment.onrender.com" : "http://localhost:5000");
 
 export function getDefaultAuthenticatedPathForRole(role) {
   return String(role || "").trim().toLowerCase() === "admin" ? "/dashboard" : "/welcome";
@@ -135,6 +132,40 @@ export async function registerUser(registerForm) {
     return {success: true, data, message: "Registration successful."};
   } catch (error) {
     return {success: false, message: "Unable to reach backend server", };
+  }
+}
+
+export async function saveAssessmentRespondent(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/assessment-respondent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        alreadySubmitted: Boolean(data?.alreadySubmitted),
+        message: data?.message || "Unable to save respondent details.",
+      };
+    }
+
+    return {
+      success: true,
+      alreadySubmitted: Boolean(data?.alreadySubmitted),
+      message: data?.message || "Respondent details saved.",
+      data: data?.data || null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || "Unable to reach backend server.",
+    };
   }
 }
 
@@ -291,6 +322,10 @@ export async function getQuestions() {
   }
 }
 
+export async function getPublicQuestions() {
+  return getQuestions();
+}
+
 export async function submitDiagnostic(payload) {
   try {
     const response = await authFetch("/api/submit", {
@@ -348,6 +383,41 @@ export async function submitDiagnostic(payload) {
   }
 }
 
+export async function submitPublicAssessment(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/public-submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return {
+        success: false,
+        alreadySubmitted: Boolean(data?.alreadySubmitted),
+        mailSent: Boolean(data?.mailSent),
+        message: data?.message || "Failed to save assessment.",
+      };
+    }
+
+    return {
+      success: true,
+      alreadySubmitted: Boolean(data?.alreadySubmitted),
+      mailSent: Boolean(data?.mailSent),
+      message: data?.message || "Assessment saved.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || "Unable to reach backend server.",
+    };
+  }
+}
+
 export async function getDiagnosticSubmissionStatus() {
   try {
     const response = await authFetch("/api/submission-status", {
@@ -396,6 +466,47 @@ export async function saveDiagnosticDraft(payload) {
     return { success: true, message: data.message || "Draft saved.", data: data.data };
   } catch (error) {
     return { success: false, message: error.message || "Network error." };
+  }
+}
+
+export async function savePublicDraft(payload) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/public-draft`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Unable to save public draft." };
+    }
+
+    return { success: true, message: data.message || "Draft saved.", data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error." };
+  }
+}
+
+export async function loadPublicDraft(respondentId) {
+  try {
+    if (!Number.isFinite(Number(respondentId)) || Number(respondentId) <= 0) {
+      return { success: false, message: 'Invalid respondentId' };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/public-draft/${Number(respondentId)}`);
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || 'No draft found.' };
+    }
+
+    return { success: true, data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || 'Network error.' };
   }
 }
 

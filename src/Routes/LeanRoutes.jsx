@@ -4,6 +4,7 @@ import Login from "../pages/Login.jsx";
 import ForgotPassword from "../pages/ForgotPassword.jsx";
 import Welcome from "../pages/Welcome.jsx";
 import Diagnostic from "../pages/Diagnostic.jsx";
+import Assessment from "../pages/Assessment.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 import Profile from "../pages/Profile.jsx";
 import RoleGuard from "../component/RoleGuard.jsx";
@@ -41,6 +42,8 @@ const AppRoutes = () => {
       <Route path="/welcome" element={<ProtectedRoute> <Welcome />  </ProtectedRoute>} />
 
       <Route path="/diagnostic" element={<ProtectedRoute> <Diagnostic /> </ProtectedRoute>} />
+
+      <Route path="/assessment" element={<Assessment />} />
 
       <Route path="/profile" element={<ProtectedRoute> <Profile /> </ProtectedRoute>} />
 
