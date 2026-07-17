@@ -5,7 +5,7 @@ import UserDetails from "../component/assessment/UserDetails";
 import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
 import ThankYou from "../component/assessment/ThankYou";
-import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft, } from "../utils/auth";
+import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft,deletePublicDraft } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
 
 const normalizeAssessmentLookupKey = (value) => {
@@ -230,9 +230,9 @@ export default function Assessment() {
 
     const { responseMap, questionResponses, totalScore, totalWeightedScore, answeredCount } = buildAssessmentMetrics(answers);
 
-    if (!silent) {
-      setDraftSaving(true);
-    }
+    // if (!silent) {
+    //   setDraftSaving(true);
+    // }
 
     const payload = {
       respondent: `${String(profile?.firstName || "").trim()} ${String(profile?.lastName || "").trim()}`.trim() || "Anonymous",
@@ -299,8 +299,6 @@ export default function Assessment() {
 
     const result = await submitPublicAssessment(payload);
 
-    console.log("Frontend result:", result);
-
     if (result?.alreadySubmitted) {
       setSubmitError(result.message || "Assessment already submitted. Assignment already done.");
       setSubmitting(false);
@@ -313,13 +311,14 @@ export default function Assessment() {
       return;
     }
 
+    const draftResult = await deletePublicDraft(profile.id);
+
+    if (!draftResult.success) {
+      console.error("Failed to delete draft:", draftResult.message);
+    }
+
     // inform user about email delivery status when available
     if (typeof result.mailSent !== "undefined") {
-      console.log("Assessment result email sent status:", result.mailSent);
-
-      console.log("1",result);
-      console.log("2",result.mailSent);
-      console.log("3",typeof result.mailSent);
       if (result.mailSent) {
         setEmailInfo({
           status: "success",

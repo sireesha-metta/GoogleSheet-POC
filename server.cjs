@@ -960,10 +960,8 @@ app.post("/api/submit", requireAuth, async (req, res) => {
 });
 
 app.get("/api/submissions", async (req, res) => {
-  console.log("Server: received /api/submissions request");
   try {
     const upstream = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSubmissions`);
-    console.log("Server: upstream submissions status", upstream.status);
     const data = await upstream.json();
     res.json(data);
   } catch (error) {

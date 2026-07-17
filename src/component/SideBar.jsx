@@ -18,7 +18,7 @@ const Sidebar = () => {
 
         <NavLink to="/dash-submissions" className={menuClass}> Submissions </NavLink>
 
-        <NavLink to="/upload-file" className={menuClass}> Upload File </NavLink>
+        {/* <NavLink to="/upload-file" className={menuClass}> Upload File </NavLink> */}
 
       </nav>
 

@@ -52,7 +52,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Submission/>} />
         <Route path="/respondents" element={<Respondents />} />
         <Route path="/admins" element={<Admins />} />
-        <Route path="/upload-file" element={<FileUpload />} />
+        {/* <Route path="/upload-file" element={<FileUpload />} /> */}
       </Route>
 
       <Route path="*" element={<RootRedirect />} />

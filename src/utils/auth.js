@@ -510,6 +510,24 @@ export async function loadPublicDraft(respondentId) {
   }
 }
 
+export async function deletePublicDraft(respondentId) {
+  try {
+    const response = await fetch( `${API_BASE_URL}/api/public-draft/${respondentId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    return await response.json();
+  } catch (error) {
+    console.error("Delete draft error:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
 export async function loadDiagnosticDraft() {
   try {
     const response = await authFetch("/api/draft");

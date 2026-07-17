@@ -1,5 +1,4 @@
 import { useMemo, useState, useEffect } from "react";
-
 export default function QuestionsCard({ questions, initialAnswers, draftSaving, draftNotice, onBack, onNextAutoSave, onSaveDraft, onFinish, }) {
 
   const computeStartIndex = () => {
