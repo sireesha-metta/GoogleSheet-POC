@@ -1,57 +1,104 @@
 import { useEffect, useState } from "react";
+import { CheckCircle2, Mail, ArrowLeft } from "lucide-react";
 
-export default function ThankYou({ profile, responseCount, mailInfo, onReturn }) {
+export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }) {
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (!onReturn) return;
-    const id = setInterval(() => setCountdown((c) => c - 1), 1000);
-    const tid = setTimeout(() => {
+
+    const id = setInterval(() => {
+      setCountdown((c) => c - 1);
+    }, 1000);
+
+    const timeout = setTimeout(() => {
       clearInterval(id);
       onReturn();
     }, 5000);
+
     return () => {
-      clearTimeout(tid);
       clearInterval(id);
+      clearTimeout(timeout);
     };
   }, [onReturn]);
 
   return (
-    <section className="rounded-3xl bg-white p-10 shadow-xl">
-      <p className="mb-3 text-sm font-semibold uppercase tracking-[4px] text-[#7A8B74]">Completed</p>
-      <h2 className="mb-4 text-3xl font-bold text-[#21302B]">Thank you, {profile?.firstName}.</h2>
+    <section className="min-h-screen bg-[#1c1c1c]">
+      <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
+        <div className="w-full max-w-3xl">
 
-      <p className="max-w-2xl leading-7 text-[#4f5a54]">
-        Your assessment is recorded. You answered {responseCount} question(s).
-      </p>
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
+            LEAN IN COACHING
+          </p>
 
-      {mailInfo ? (
-        <p
-          className={
-            "mt-4 rounded-lg px-4 py-2 text-sm " +
-            (mailInfo.status === "success"
-              ? "border border-green-300 bg-green-50 text-green-800"
-              : mailInfo.status === "error"
-              ? "border border-red-300 bg-red-50 text-red-800"
-              : "border border-gray-300 bg-gray-50 text-gray-800")
-          }
-        >
-          {mailInfo?.message || (typeof mailInfo === "string" ? mailInfo : JSON.stringify(mailInfo))}
-        </p>
-      ) : (
-        <p className="mt-4 text-sm text-[#4f5a54]">We did not send an email confirmation.</p>
-      )}
+          <h1 className="text-3xl font-bold text-[#c8a85b] md:text-3xl">
+            Assessment Complete
+          </h1>
 
-      <div className="mt-6 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onReturn && onReturn()}
-          className="rounded-full border border-[#cd3cd3] px-5 py-2.5 text-sm text-[#c8a85b] transition hover:bg-[#cd3cd3]/10"
-        >
-          Back to Home
-        </button>
+          <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
+            Thank you for taking the Leadership Reset Diagnostic.
+          </p>
 
-        <span className="text-sm text-[#7a7a7a]">Auto-returning in {countdown}s...</span>
+          <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
+
+            <div className="mb-4 flex items-center gap-4">
+              <div className="rounded-full bg-green-500/20 p-3">
+                <CheckCircle2 size={30} className="text-green-400" />
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-[#c8a85b]">Thank you, {profile?.firstName}! </h2>
+
+                <p className="mt-2 text-gray-400">Your assessment has been submitted successfully. </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
+              <p className="text-lg text-[#c8a85b]">
+                Questions Answered : {responseCount}
+              </p>
+
+              {/* <p className="mt-2 text-3xl font-bold text-white">
+                {responseCount}
+              </p> */}
+            </div>
+
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
+              <Mail className="mt-1 text-[#c8a85b]" size={20} />
+
+              <div>
+                <p className="font-semibold text-[#c8a85b]">
+                  Email Confirmation :
+                </p>
+
+                <p
+                  className={`mt-2 text-sm ${mailInfo?.status === "success"
+                      ? "text-green-400"
+                      : mailInfo?.status === "error"
+                        ? "text-red-400"
+                        : "text-gray-400"
+                    }`}
+                >
+                  {mailInfo?.message ||
+                    "Your assessment has been recorded."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
+
+              <button type="button" onClick={onReturn}
+                className="inline-flex items-center gap-2 rounded-full border border-[#cd3cd3] px-6 py-4 font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10">
+                <ArrowLeft size={16} /> Back to Home
+              </button>
+
+              <p className="text-sm text-gray-500">Returning automatically in{" "}
+                <span className="font-semibold text-[#c8a85b]">{countdown}s</span>
+              </p>
+
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

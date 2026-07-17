@@ -385,7 +385,7 @@ export async function submitDiagnostic(payload) {
 
 export async function submitPublicAssessment(payload) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/public-submit`, {
+    const response = await fetch(`${API_BASE_URL}/api/submit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

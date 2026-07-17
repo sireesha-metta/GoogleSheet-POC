@@ -299,6 +299,8 @@ export default function Assessment() {
 
     const result = await submitPublicAssessment(payload);
 
+    console.log("Frontend result:", result);
+
     if (result?.alreadySubmitted) {
       setSubmitError(result.message || "Assessment already submitted. Assignment already done.");
       setSubmitting(false);
@@ -313,6 +315,11 @@ export default function Assessment() {
 
     // inform user about email delivery status when available
     if (typeof result.mailSent !== "undefined") {
+      console.log("Assessment result email sent status:", result.mailSent);
+
+      console.log("1",result);
+      console.log("2",result.mailSent);
+      console.log("3",typeof result.mailSent);
       if (result.mailSent) {
         setEmailInfo({
           status: "success",
@@ -426,42 +433,50 @@ export default function Assessment() {
               )}
 
               {submitting ? (
-                <section>
-                  <div className="mb-6 mt-2 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
+                <section className="min-h-screen bg-[#1c1c1c]">
+                  <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
+                    <div className="w-full max-w-3xl">
 
-                  <p className="text-sm uppercase tracking-[0.06em] text-[#c8a85b]">
-                    Saving
-                  </p>
+                      <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
+                        LEAN IN COACHING
+                      </p>
 
-                  <h2 className="mt-2 text-lg font-bold text-[#c8a85b] md:text-xl">
-                    Saving your assessment...
-                  </h2>
+                      <h1 className="text-4xl font-bold text-[#c8a85b] md:text-5xl">Saving Assessment</h1>
 
-                  <div className="mt-4 h-2 w-40 animate-pulse rounded-full bg-[#cd3cd3]" />
+                      <p className="mt-5 text-lg text-gray-400">Please wait while we securely save your responses.</p>
 
-                  <div className="mb-2 mt-8 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
+                      <div className="mt-10 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
+
+                        <div className="flex items-center gap-4">
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#cd3cd3] border-t-transparent" />
+
+                          <div>
+                            <p className="font-semibold text-[#c8a85b]">Saving your assessment...</p>
+
+                            <p className="mt-1 text-sm text-gray-400"> Do not close this window.</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-8 h-3 overflow-hidden rounded-full bg-[#1c1c1c]">
+                          <div className="h-full w-1/2 animate-pulse rounded-full bg-[#c8a85b]" />
+                        </div>
+
+                      </div>
+
+                    </div>
+                  </div>
                 </section>
               ) : (
-                <QuestionsCard
-                  questions={questionItems}
-                  initialAnswers={responses}
-                  draftSaving={draftSaving}
-                  draftNotice={draftInfo}
-                  onBack={() => setStep("instructions")}
-                  onNextAutoSave={handleNextAutoSave}
-                  onSaveDraft={handleSaveDraft}
-                  onFinish={handleAssessmentFinish}
-                />
+                <QuestionsCard questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
+                  draftNotice={draftInfo} onBack={() => setStep("instructions")} onNextAutoSave={handleNextAutoSave}
+                  onSaveDraft={handleSaveDraft} onFinish={handleAssessmentFinish} />
               )}
             </>
           ))}
 
         {step === "thankyou" && (
           <ThankYou profile={completedAssessment || profile} mailInfo={emailInfo} onReturn={() => setStep("hero")}
-            responseCount={
-              completedAssessment?.responseCount ||
-              Object.keys(responses).length
-            } />
+            responseCount={completedAssessment?.responseCount || Object.keys(responses).length} />
         )}
       </div>
     </div>

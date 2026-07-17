@@ -139,3 +139,19 @@ export async function deleteRespondent(id) {
 		};
 	}
 }
+
+export async function deleteSubmission(id) {
+  try {
+    const response = await authFetch(`/api/submissions/${id}`, {
+      method: "DELETE",
+    });
+
+    return parseResponse(response);
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || "Unable to delete submission.",
+      data: null,
+    };
+  }
+}
