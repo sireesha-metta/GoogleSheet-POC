@@ -7,6 +7,7 @@ import QuestionsCard from "../component/assessment/QuestionsCard";
 import ThankYou from "../component/assessment/ThankYou";
 import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft,deletePublicDraft } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
+const EMPTY_PROFILE = { firstName: "", lastName: "", email: "", mobile: "", id: null };
 
 const normalizeAssessmentLookupKey = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
@@ -53,7 +54,7 @@ const getLatestCompletedAssessment = () => {
 
 export default function Assessment() {
   const [step, setStep] = useState("hero");
-  const [profile, setProfile] = useState({ firstName: "", lastName: "", email: "" });
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [responses, setResponses] = useState({});
   const [questionItems, setQuestionItems] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
@@ -67,6 +68,22 @@ export default function Assessment() {
   const [detailsError, setDetailsError] = useState("");
   const [completedAssessment, setCompletedAssessment] = useState(null);
   const [emailInfo, setEmailInfo] = useState(null);
+
+  const resetAssessmentSession = () => {
+    setResponses({});
+    setDraftInfo("");
+    setDraftError("");
+    setSubmitError("");
+    setEmailInfo(null);
+    setCompletedAssessment(null);
+  };
+
+  const returnToHeroWithFreshDetails = () => {
+    resetAssessmentSession();
+    setDetailsError("");
+    setProfile(EMPTY_PROFILE);
+    setStep("hero");
+  };
 
   const loadQuestions = async (activeRef) => {
     setQuestionsLoading(true);
@@ -124,6 +141,7 @@ export default function Assessment() {
 
   const handleDetailsContinue = async (details) => {
     setDetailsError("");
+    resetAssessmentSession();
     setDetailsSaving(true);
 
     const normalizedEmail = String(details?.email || "").trim().toLowerCase();
@@ -146,7 +164,20 @@ export default function Assessment() {
     });
 
     if (result?.alreadySubmitted) {
-      setDetailsError(result.message || "Assessment already submitted. Assignment already done.");
+      const completedEntry = {
+        firstName: String(details?.firstName || "").trim(),
+        lastName: String(details?.lastName || "").trim(),
+        email: String(details?.email || "").trim(),
+        mobile: String(details?.mobile || "").trim(),
+        completedAt: new Date().toISOString(),
+        responseCount: Number(existingCompleted?.responseCount || 0),
+        answers: existingCompleted?.answers || {},
+      };
+
+      persistCompletedAssessment(completedEntry);
+      setProfile(completedEntry);
+      setCompletedAssessment(completedEntry);
+      setStep("thankyou");
       setDetailsSaving(false);
       return;
     }
@@ -159,9 +190,10 @@ export default function Assessment() {
 
     // Merge returned respondent id (for public drafts/submissions) into profile
     const returned = result.data || {};
-    setCompletedAssessment(null);
     const respondentId = returned.id || (returned?.data && returned.data.id) || null;
     setProfile({ ...details, id: respondentId });
+    setResponses({});
+
     // attempt to load any public draft for this respondent so we can resume
     if (!isAuthenticated() && Number.isFinite(Number(respondentId)) && Number(respondentId) > 0) {
       try {
@@ -175,6 +207,7 @@ export default function Assessment() {
         // ignore draft load errors — user can still proceed
       }
     }
+
     setStep("instructions");
     setDetailsSaving(false);
   };
@@ -360,11 +393,18 @@ export default function Assessment() {
       <div key={step} className="font-mono text-[#c8a85b] transition-all duration-300">
 
         {step === "hero" && (
-          <Hero onStart={() => setStep("details")} />
+          <Hero
+            onStart={() => {
+              resetAssessmentSession();
+              setDetailsError("");
+              setProfile(EMPTY_PROFILE);
+              setStep("details");
+            }}
+          />
         )}
 
         {step === "details" && (
-          <UserDetails initialData={profile} continueError={detailsError} continueSaving={detailsSaving} onBack={() => setStep("hero")} onContinue={handleDetailsContinue} />
+          <UserDetails initialData={profile} continueError={detailsError} continueSaving={detailsSaving} onBack={returnToHeroWithFreshDetails} onContinue={handleDetailsContinue} />
         )}
 
         {step === "instructions" && (
@@ -474,7 +514,7 @@ export default function Assessment() {
           ))}
 
         {step === "thankyou" && (
-          <ThankYou profile={completedAssessment || profile} mailInfo={emailInfo} onReturn={() => setStep("hero")}
+          <ThankYou profile={completedAssessment || profile} mailInfo={emailInfo} onReturn={returnToHeroWithFreshDetails}
             responseCount={completedAssessment?.responseCount || Object.keys(responses).length} />
         )}
       </div>
