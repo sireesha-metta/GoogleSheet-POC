@@ -34,7 +34,7 @@ export default function QuestionsCard({ questions, initialAnswers, draftSaving, 
   useEffect(() => {
     setAnswers(initialAnswers || {});
     setIndex(computeStartIndex());
-  }, [initialAnswers]);
+  }, [initialAnswers, questions]);
 
   const handleNext = async () => {
     if (!currentAnswer) return;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { validators } from "../../utils/validation";
 import FormInput from "../FormInput";
 import { User, Mail } from "lucide-react";
@@ -35,6 +35,12 @@ export default function UserDetails({ initialData, continueSaving, continueError
   const [form, setForm] = useState(createInitialForm(initialData));
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+
+  useEffect(() => {
+    setForm(createInitialForm(initialData));
+    setErrors({});
+    setTouched({});
+  }, [initialData]);
 
   const validateRegisterForm = (form) => {
     const errors = {};

@@ -55,6 +55,7 @@ const getLatestCompletedAssessment = () => {
 export default function Assessment() {
   const [step, setStep] = useState("hero");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [assessmentSessionKey, setAssessmentSessionKey] = useState(0);
   const [responses, setResponses] = useState({});
   const [questionItems, setQuestionItems] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
@@ -82,6 +83,7 @@ export default function Assessment() {
     resetAssessmentSession();
     setDetailsError("");
     setProfile(EMPTY_PROFILE);
+    setAssessmentSessionKey((current) => current + 1);
     setStep("hero");
   };
 
@@ -193,6 +195,7 @@ export default function Assessment() {
     const respondentId = returned.id || (returned?.data && returned.data.id) || null;
     setProfile({ ...details, id: respondentId });
     setResponses({});
+    setAssessmentSessionKey((current) => current + 1);
 
     // attempt to load any public draft for this respondent so we can resume
     if (!isAuthenticated() && Number.isFinite(Number(respondentId)) && Number(respondentId) > 0) {
@@ -506,7 +509,7 @@ export default function Assessment() {
                   </div>
                 </section>
               ) : (
-                <QuestionsCard questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
+                <QuestionsCard key={assessmentSessionKey} questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
                   draftNotice={draftInfo} onBack={() => setStep("instructions")} onNextAutoSave={handleNextAutoSave}
                   onSaveDraft={handleSaveDraft} onFinish={handleAssessmentFinish} />
               )}
