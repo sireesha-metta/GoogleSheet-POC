@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  clearDiagnosticDraft, fetchAuthProfile, getDiagnosticSubmissionStatus, getAuthSession,
-  getQuestions, loadDiagnosticDraft, saveDiagnosticDraft, submitDiagnostic,
-} from "../utils/auth";
+import { clearDiagnosticDraft, fetchAuthProfile, getDiagnosticSubmissionStatus, getAuthSession,getQuestions, loadDiagnosticDraft, saveDiagnosticDraft, submitDiagnostic,} from "../utils/auth";
 import AuthHeader from "../component/AuthHeader.jsx";
 
 function toNumber(value) {
@@ -129,16 +126,6 @@ function Diagnostic() {
     };
   }, []);
 
-
-  // useEffect(() => {
-  //   if (showSummary) {
-  //     const timer = setTimeout(() => {
-  //       navigate("/welcome");
-  //     }, 5000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [showSummary, navigate]);
-
   const answeredCount = questions.filter(
     (q) => (answers[q.rowIndex] || "").trim() !== "").length;
 
@@ -238,7 +225,6 @@ function Diagnostic() {
     };
 
     const result = await submitDiagnostic(payload);
-    console.log("submitDiagnostic result:", result);
 
     if (result.success) {
       await clearDiagnosticDraft();
@@ -374,17 +360,6 @@ function Diagnostic() {
               </table>
             </div>
           </div>
-
-          {/* <div className="mt-8 w-full rounded-3xl border border-slate-400 bg-[#1E293B] p-8">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-slate-200"> Redirecting to Welcome Page...  </span>
-              <span className="text-yellow-200 font-semibold"> 5 seconds </span>
-            </div>
-
-            <div className="h-2 overflow-hidden rounded-full bg-slate-700">
-              <div className="h-full w-full animate-pulse rounded-full bg-yellow-400"></div>
-            </div>
-          </div> */}
         </main>
       </div>
     );
@@ -427,10 +402,7 @@ function Diagnostic() {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Answered</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{answeredCount}/{questions.length}</h3>
               </div>
-              {/* <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score</p>
-                <h3 className="mt-4 text-3xl font-semibold text-white">{totalScore}</h3>
-              </div> */}
+              
               <div className="rounded-3xl border border-slate-700 bg-[#1E293B] p-6 transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Weight</p>
                 <h3 className="mt-4 text-3xl font-semibold text-white">{questionMetrics.reduce((sum, q) => sum + q.weight, 0)}</h3>
@@ -475,9 +447,7 @@ function Diagnostic() {
                       </p>
 
                       <div className="flex flex-wrap gap-2 text-sm text-slate-400">
-                        {/* <span className="rounded-full border border-slate-800/80 bg-[#0F172A] border-slate-600 px-3 py-1">
-                          Scores: {q.score}
-                        </span> */}
+                        
                         <span className="rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-yellow-200">
                           Score-auto: {q.weightedScore}
                         </span>

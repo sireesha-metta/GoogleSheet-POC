@@ -227,13 +227,13 @@ const Respondents = () => {
       if (emailError) nextErrors.email = emailError;
     }
 
-    const mobile = String(form.mobile || "").trim().replace(/\D/g, "").slice(-10);
-    if (!mobile) {
-      nextErrors.mobile = "Mobile Number is required";
-    } else {
-      const mobileError = validators.mobile(mobile);
-      if (mobileError) nextErrors.mobile = mobileError;
-    }
+    // const mobile = String(form.mobile || "").trim().replace(/\D/g, "").slice(-10);
+    // if (!mobile) {
+    //   nextErrors.mobile = "Mobile Number is required";
+    // } else {
+    //   const mobileError = validators.mobile(mobile);
+    //   if (mobileError) nextErrors.mobile = mobileError;
+    // }
 
     const password = String(form.password || "");
     if (!password) {
@@ -382,11 +382,11 @@ const Respondents = () => {
                   Last Name{sortIndicator("lastName")}
                 </button>
               </th>
-              <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] text-center text-xs font-semibold text-white px-4 py-3">
+              {/* <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] text-center text-xs font-semibold text-white px-4 py-3">
                 <button type="button" onClick={() => onSort("mobile")} className="font-semibold">
                   Mobile{sortIndicator("mobile")}
                 </button>
-              </th>
+              </th> */}
               <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] text-center text-xs font-semibold text-white px-4 py-3">
                 <button type="button" onClick={() => onSort("email")} className="font-semibold">
                   Email{sortIndicator("email")}
@@ -450,7 +450,7 @@ const Respondents = () => {
                         respondent.lastName || "-"
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    {/* <td className="px-4 py-3 text-center">
                       {isEditing ? (
                         <input
                           value={editForm.mobile}
@@ -462,7 +462,7 @@ const Respondents = () => {
                       ) : (
                         respondent.mobile || "-"
                       )}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-center">
                       {isEditing ? (
                         <input
@@ -629,7 +629,7 @@ const Respondents = () => {
                 </div>
               </div>
 
-              <div className="relative">
+              {/* <div className="relative">
                 <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />
                 <FormInput
                   type="tel"
@@ -640,7 +640,7 @@ const Respondents = () => {
                   error={createErrors.mobile}
                   showErrorInPlaceholder={true}
                 />
-              </div>
+              </div> */}
 
               <div className="relative">
                 <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-yellow-400 z-10" />

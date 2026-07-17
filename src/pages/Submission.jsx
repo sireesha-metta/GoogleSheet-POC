@@ -485,7 +485,7 @@ export default function Submission() {
                   setDraftSearchQuery(e.target.value);
                   setDraftCurrentPage(1);
                 }}
-                placeholder="Search name, email, mobile"
+                placeholder="Search name, email"
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
               />
 
@@ -532,11 +532,11 @@ export default function Submission() {
                           Answered{sortIndicator(draftSortKey, draftSortDir, "answered_count")}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-left font-semibold">
+                      {/* <th className="px-6 py-4 text-left font-semibold">
                         <button type="button" onClick={() => onDraftSort("mobile")}>
                           Mobile{sortIndicator(draftSortKey, draftSortDir, "mobile")}
                         </button>
-                      </th>
+                      </th> */}
                       <th className="px-6 py-4 text-left font-semibold">
                         <button type="button" onClick={() => onDraftSort("email")}>
                           Email{sortIndicator(draftSortKey, draftSortDir, "email")}
@@ -561,7 +561,7 @@ export default function Submission() {
                       <tr key={draft.id} className={`border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50`} >
                         <td className="px-6 py-5">{draft.respondent_name} </td>
                         <td className="px-6 py-5 text-center">{draft.answered_count}/12</td>
-                        <td className="px-6 py-5"> {draft.mobile}  </td>
+                        {/* <td className="px-6 py-5"> {draft.mobile}  </td> */}
                         <td className="px-6 py-5">  {draft.email} </td>
                         <td className="px-6 py-5">{formatDate(draft.updated_at)}  </td>
                         {/* <td className="px-6 py-5"> {draft.assessment_type} </td> */}
@@ -629,7 +629,7 @@ export default function Submission() {
                   setNotStartedSearchQuery(e.target.value);
                   setNotStartedCurrentPage(1);
                 }}
-                placeholder="Search name, email, mobile"
+                placeholder="Search name, email"
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
               />
 
@@ -659,9 +659,9 @@ export default function Submission() {
                       <th className="px-6 py-4 text-center text-xs font-semibold">
                         <button type="button" onClick={() => onNotStartedSort("email")}>Email{sortIndicator(notStartedSortKey, notStartedSortDir, "email")}</button>
                       </th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold">
+                      {/* <th className="px-6 py-4 text-center text-xs font-semibold">
                         <button type="button" onClick={() => onNotStartedSort("mobile")}>Mobile{sortIndicator(notStartedSortKey, notStartedSortDir, "mobile")}</button>
-                      </th>
+                      </th> */}
                       <th className="px-6 py-4 text-center text-xs font-semibold">
                         <button type="button" onClick={() => onNotStartedSort("status")}>Status{sortIndicator(notStartedSortKey, notStartedSortDir, "status")}</button>
                       </th>
@@ -676,7 +676,7 @@ export default function Submission() {
                       <tr key={person.id} className={i % 2 === 0 ? "bg-[#f8f6f2]" : "bg-white"}>
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.respondent}</td>
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.email}</td>
-                        <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.mobile}</td>
+                        {/* <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.mobile}</td> */}
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.status || "Pending"}</td>
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{formatDate(person.registeredDate)}</td>
                       </tr>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { authFetch } from "../utils/auth";
+import { deleteSubmission } from "../services/Api";
 // import AuthHeader from "../component/AuthHeader.jsx";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
@@ -24,6 +25,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +52,7 @@ export default function Dashboard() {
         setLoading(false);
       })
       .catch(() => {
-        setError("Could not reach Google Sheets. Check your network or script URL.");
+        setError("Could not reach the backend. Check your network or API server.");
         setLoading(false);
       });
   }, []);
@@ -148,6 +151,25 @@ export default function Dashboard() {
     setDateFilter("all");
   };
 
+  const handleDelete = async (submissionId) => {
+    const confirmed = window.confirm("Delete this submission from the database?");
+    if (!confirmed) return;
+
+    setDeleteError("");
+    setDeletingId(submissionId);
+
+    const result = await deleteSubmission(submissionId);
+    setDeletingId(null);
+
+    if (!result.success) {
+      setDeleteError(result.message || "Unable to delete submission.");
+      return;
+    }
+
+    setSubmissions((prev) => prev.filter((item) => Number(item.id) !== Number(submissionId)));
+    setExpanded(null);
+  };
+
   const handleSort = (column) => {
     if (sortBy === column) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -173,7 +195,7 @@ export default function Dashboard() {
                 px-6 py-5 rounded-t-lg">
         <div>
           <h1 className="text-2xl font-bold text-white">Submissions Dashboard</h1>
-          <p className="text-sm text-slate-300">All responses saved to Google Sheets</p>
+          <p className="text-sm text-slate-300">All responses saved to the local database (DB source of truth).</p>
         </div>
       </div>
 
@@ -200,6 +222,12 @@ export default function Dashboard() {
         {!loading && error && (
           <p className="rounded-lg border border-red-300 bg-red-50 px-5 py-3 text-center text-sm text-red-700">
             {error}
+          </p>
+        )}
+
+        {!loading && !error && deleteError && (
+          <p className="rounded-lg border border-red-300 bg-red-50 px-5 py-3 text-center text-sm text-red-700">
+            {deleteError}
           </p>
         )}
 
@@ -244,12 +272,21 @@ export default function Dashboard() {
                           <td className="border-b border-[#e8ecf0] px-3 py-2 text-center align-middle font-bold text-blue-700">{sub.totalScore}</td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 text-center align-middle font-bold text-emerald-700">{sub.totalWeightedScore}</td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">
-                            <button
-                              className="whitespace-nowrap rounded-md bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-3 py-1 text-[11px] font-semibold text-white"
-                              onClick={() => toggleExpand(globalIdx)}
-                            >
-                              {isOpen ? "Hide ▲" : "View ▼"}
-                            </button>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                className="whitespace-nowrap rounded-md bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-3 py-1 text-[11px] font-semibold text-white"
+                                onClick={() => toggleExpand(globalIdx)}
+                              >
+                                {isOpen ? "Hide ▲" : "View ▼"}
+                              </button>
+                              <button
+                                className="whitespace-nowrap rounded-md border border-red-400 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 disabled:opacity-50"
+                                onClick={() => handleDelete(sub.id)}
+                                disabled={deletingId === sub.id}
+                              >
+                                {deletingId === sub.id ? "Deleting..." : "Delete"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
 
