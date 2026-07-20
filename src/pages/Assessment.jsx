@@ -5,7 +5,7 @@ import UserDetails from "../component/assessment/UserDetails";
 import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
 import ThankYou from "../component/assessment/ThankYou";
-import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft,deletePublicDraft } from "../utils/auth";
+import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
 const EMPTY_PROFILE = { firstName: "", lastName: "", email: "", mobile: "", id: null };
 
@@ -80,6 +80,8 @@ export default function Assessment() {
   };
 
   const returnToHeroWithFreshDetails = () => {
+
+      clearCompletedAssessments();
     resetAssessmentSession();
     setDetailsError("");
     setProfile(EMPTY_PROFILE);
@@ -129,17 +131,22 @@ export default function Assessment() {
     const activeRef = { current: true };
     loadQuestions(activeRef);
 
-    const existingCompleted = getLatestCompletedAssessment();
-    if (existingCompleted) {
-      setProfile(existingCompleted);
-      setCompletedAssessment(existingCompleted);
-      setStep("thankyou");
-    }
+    // const existingCompleted = getLatestCompletedAssessment();
+    // if (existingCompleted) {
+    //   setProfile(existingCompleted);
+    //   setCompletedAssessment(existingCompleted);
+    //   setStep("thankyou");
+    // }
+    setStep("hero");
 
     return () => {
       activeRef.current = false;
     };
   }, []);
+
+  const clearCompletedAssessments = () => {
+    localStorage.removeItem(COMPLETED_ASSESSMENT_STORAGE_KEY);
+  };
 
   const handleDetailsContinue = async (details) => {
     setDetailsError("");
