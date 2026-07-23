@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect } from "react";
-export default function QuestionsCard({ questions, initialAnswers, draftSaving, draftNotice, onBack, onNextAutoSave, onSaveDraft, onFinish, }) {
+import { useMemo, useState, useEffect, useCallback } from "react";
+export default function QuestionsCard({ questions, initialAnswers, draftNotice, onBack, onNextAutoSave, onFinish, }) {
 
-  const computeStartIndex = () => {
+  const computeStartIndex = useCallback(() => {
     const ans = initialAnswers || {};
     for (let i = 0; i < questions.length; i += 1) {
       const q = questions[i];
@@ -11,7 +11,7 @@ export default function QuestionsCard({ questions, initialAnswers, draftSaving, 
       }
     }
     return 0;
-  };
+  }, [initialAnswers, questions]);
 
   const [index, setIndex] = useState(computeStartIndex);
   const [answers, setAnswers] = useState(initialAnswers || {});
@@ -21,20 +21,30 @@ export default function QuestionsCard({ questions, initialAnswers, draftSaving, 
   const currentOptions = Array.isArray(currentQuestion?.options) && currentQuestion.options.length ? currentQuestion.options : [];
   const answerKey = Number.isFinite(Number(currentQuestion?.rowIndex)) ? Number(currentQuestion.rowIndex) : index;
   const currentAnswer = answers[answerKey] || "";
+  
+  const answeredCount = useMemo(
+    () => Object.values(answers || {}).filter((value) => String(value || "").trim()).length,
+    [answers]
+  );
 
   const progress = useMemo(
-    () => Math.round(((index + 1) / questions.length) * 100),
-    [index, questions.length]
+    () => Math.round((answeredCount / questions.length) * 100),
+    [answeredCount, questions.length]
   );
+  console.log("Index:", index);
+  console.log("Question:", index + 1);
+  console.log("Progress:", progress);
 
   const setAnswer = (answer) => {
     setAnswers((prev) => ({ ...prev, [answerKey]: answer }));
   };
 
   useEffect(() => {
+    // Keep the local question index aligned with the latest answer snapshot.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAnswers(initialAnswers || {});
     setIndex(computeStartIndex());
-  }, [initialAnswers, questions]);
+  }, [initialAnswers, computeStartIndex]);
 
   const handleNext = async () => {
     if (!currentAnswer) return;
@@ -48,6 +58,7 @@ export default function QuestionsCard({ questions, initialAnswers, draftSaving, 
       try {
         await onNextAutoSave(answers);
       } catch {
+        return;
       }
     }
     setIndex((prev) => prev + 1);

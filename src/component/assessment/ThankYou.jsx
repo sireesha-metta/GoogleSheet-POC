@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Mail, ArrowLeft } from "lucide-react";
 
+const AUTO_RETURN_DELAY_SECONDS = 15;
+
 export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }) {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(AUTO_RETURN_DELAY_SECONDS);
 
   useEffect(() => {
     if (!onReturn) return;
 
     const id = setInterval(() => {
-      setCountdown((c) => c - 1);
+      setCountdown((current) => Math.max(current - 1, 0));
     }, 1000);
 
     const timeout = setTimeout(() => {
       clearInterval(id);
       onReturn();
-    }, 5000);
+    }, AUTO_RETURN_DELAY_SECONDS * 1000);
 
     return () => {
       clearInterval(id);
@@ -23,7 +25,7 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
   }, [onReturn]);
 
   return (
-    <section className="min-h-screen bg-[#1c1c1c]">
+    <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
       <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
         <div className="w-full max-w-3xl">
 
@@ -50,6 +52,11 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
                 <h2 className="text-2xl font-bold text-[#c8a85b]">Thank you, {profile?.firstName}! </h2>
 
                 <p className="mt-2 text-gray-400">Your assessment has been submitted successfully. </p>
+                {profile?.email ? (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Email ID: <span className="text-[#c8a85b]">{profile.email}</span>
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -68,19 +75,17 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
 
               <div>
                 <p className="font-semibold text-[#c8a85b]">
-                  Email Confirmation :
-                </p>
-
-                <p
-                  className={`mt-2 text-sm ${mailInfo?.status === "success"
-                      ? "text-green-400"
-                      : mailInfo?.status === "error"
-                        ? "text-red-400"
-                        : "text-gray-400"
-                    }`}
-                >
-                  {mailInfo?.message ||
-                    "Your assessment has been recorded."}
+                  Email Confirmation:
+                  <span
+                    className={`ml-2 text-sm ${mailInfo?.status === "success"
+                        ? "text-green-400"
+                        : mailInfo?.status === "error"
+                          ? "text-red-400"
+                          : "text-gray-400"
+                      }`}
+                  >
+                    {mailInfo?.message || "Your assessment has been recorded."}
+                  </span>
                 </p>
               </div>
             </div>

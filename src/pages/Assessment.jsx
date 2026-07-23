@@ -5,7 +5,7 @@ import UserDetails from "../component/assessment/UserDetails";
 import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
 import ThankYou from "../component/assessment/ThankYou";
-import { getQuestions, isAuthenticated, saveAssessmentRespondent, saveDiagnosticDraft, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft } from "../utils/auth";
+import { getQuestions, isAuthenticated, saveAssessmentRespondent, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
 const EMPTY_PROFILE = { firstName: "", lastName: "", email: "", mobile: "", id: null };
 
@@ -45,11 +45,6 @@ const getCompletedAssessment = (value) => {
   const key = normalizeAssessmentLookupKey(value);
   const entries = readCompletedAssessments();
   return entries[key] || null;
-};
-
-const getLatestCompletedAssessment = () => {
-  const entries = Object.values(readCompletedAssessments());
-  return entries.length ? entries[entries.length - 1] : null;
 };
 
 export default function Assessment() {
@@ -129,6 +124,7 @@ export default function Assessment() {
 
   useEffect(() => {
     const activeRef = { current: true };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadQuestions(activeRef);
 
     // const existingCompleted = getLatestCompletedAssessment();
@@ -213,7 +209,7 @@ export default function Assessment() {
           setResponses(draftData.answersByRow || {});
           setDraftInfo(`Resume saved progress — ${Number(draftData.answeredCount || 0)}/${Number(draftData.totalQuestions || 0)} answered.`);
         }
-      } catch (e) {
+      } catch {
         // ignore draft load errors — user can still proceed
       }
     }
@@ -261,14 +257,11 @@ export default function Assessment() {
       setDraftError("");
     }
 
-    if (!isAuthenticated()) {
-      // For public users, save to public draft endpoint if we have a respondent id
-      if (!profile?.id) {
-        if (!silent) {
-          setDraftError("Login is required to save draft in assessment_drafts.");
-        }
-        return;
+    if (!profile?.id) {
+      if (!silent) {
+        setDraftError("Respondent ID is required to save a public draft.");
       }
+      return;
     }
 
     const { responseMap, questionResponses, totalScore, totalWeightedScore, answeredCount } = buildAssessmentMetrics(answers);
@@ -288,17 +281,11 @@ export default function Assessment() {
       questionResponses,
     };
 
-    let result;
-    if (isAuthenticated()) {
-      result = await saveDiagnosticDraft(payload);
-    } else {
-      // public draft requires respondentId field
-      const publicPayload = {
-        respondentId: Number(profile.id),
-        ...payload,
-      };
-      result = await savePublicDraft(publicPayload);
-    }
+    const publicPayload = {
+      respondentId: Number(profile.id),
+      ...payload,
+    };
+    const result = await savePublicDraft(publicPayload);
 
     if (!result.success) {
       if (!silent) {
@@ -400,7 +387,11 @@ export default function Assessment() {
   return (
     <div className="min-h-screen bg-[#1c1c1c] px-4 py-8">
       {/* <div className="mx-auto max-w-5xl rounded-[28px] border-2 border-[#cd3cd3] bg-[#262626] p-5 shadow-[0_20px_45px_rgba(0,0,0,0.6)] md:p-8"> */}
-      <div key={step} className="font-mono text-[#c8a85b] transition-all duration-300">
+      <div
+        key={step}
+        className="text-[#c8a85b] transition-all duration-300"
+        style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}
+      >
 
         {step === "hero" && (
           <Hero
@@ -524,8 +515,12 @@ export default function Assessment() {
           ))}
 
         {step === "thankyou" && (
-          <ThankYou profile={completedAssessment || profile} mailInfo={emailInfo} onReturn={returnToHeroWithFreshDetails}
-            responseCount={completedAssessment?.responseCount || Object.keys(responses).length} />
+          <ThankYou
+            profile={completedAssessment || profile}
+            mailInfo={emailInfo}
+            onReturn={returnToHeroWithFreshDetails}
+            responseCount={questionItems.length}
+          />
         )}
       </div>
     </div>

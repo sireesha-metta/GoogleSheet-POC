@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { clearDiagnosticDraft, fetchAuthProfile, getDiagnosticSubmissionStatus, getAuthSession,getQuestions, loadDiagnosticDraft, saveDiagnosticDraft, submitDiagnostic,} from "../utils/auth";
+import { fetchAuthProfile, getDiagnosticSubmissionStatus, getAuthSession, getQuestions, submitDiagnostic } from "../utils/auth";
 import AuthHeader from "../component/AuthHeader.jsx";
 
 function toNumber(value) {
@@ -9,7 +8,6 @@ function toNumber(value) {
 }
 
 function Diagnostic() {
-  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [respondent, setRespondent] = useState("");
@@ -19,19 +17,6 @@ function Diagnostic() {
   const [message, setMessage] = useState(null);
   const [showSummary, setShowSummary] = useState(false);
   const [submissionSnapshot, setSubmissionSnapshot] = useState(null);
-
-  const applyDraftData = (draftData, fallbackQuestionCount = 0) => {
-    const draftRespondent = String(draftData.respondent || "").trim();
-    const draftMobile = String(draftData.mobile || "").trim();
-
-    setRespondent((prev) => draftRespondent || prev || "");
-    setMobile((prev) => draftMobile || prev || "");
-    setAnswers(draftData.answersByRow || {});
-    setMessage({
-      type: "success",
-      text: `Draft loaded: ${draftData.answeredCount || 0} of ${draftData.totalQuestions || fallbackQuestionCount} questions answered.`,
-    });
-  };
 
   useEffect(() => {
     let active = true;
@@ -108,13 +93,8 @@ function Diagnostic() {
       });
       setAnswers(initialAnswers);
 
-      const draftResult = await loadDiagnosticDraft();
-
+      // /api/draft load support was removed from the app-level flow.
       if (!active) return;
-
-      if (draftResult.success && draftResult.data) {
-        applyDraftData(draftResult.data, loadedQuestions.length);
-      }
 
       setLoading(false);
     };
@@ -153,26 +133,6 @@ function Diagnostic() {
         question: q.question,
         answer: q.selectedAnswer,
       }));
-
-  const buildDraftPayload = () => ({
-    respondent: respondent.trim() || "Anonymous",
-    mobile: mobile.trim(),
-    savedAt: new Date().toISOString(),
-    answeredCount,
-    totalQuestions: questions.length,
-    totalScore,
-    totalWeightedScore,
-    answersByRow: answers,
-    questionResponses: questionMetrics.map((q) => ({
-      rowIndex: q.rowIndex,
-      number: q.number,
-      question: q.question,
-      answer: q.selectedAnswer,
-      score: q.score,
-      weight: q.weight,
-      weightedScore: q.weightedScore,
-    })),
-  });
 
   const handleSubmit = async () => {
     if (!respondent.trim()) {
@@ -227,7 +187,7 @@ function Diagnostic() {
     const result = await submitDiagnostic(payload);
 
     if (result.success) {
-      await clearDiagnosticDraft();
+      // /api/draft clear support was removed from the app-level flow.
       setMessage({ type: "success", text: result.message });
       setSubmissionSnapshot({
         respondent: payload.respondent,
@@ -252,43 +212,6 @@ function Diagnostic() {
       setShowSummary(true);
     } else {
       setMessage({ type: "error", text: result.message });
-    }
-
-    setSaving(false);
-  };
-
-  const handleSaveDraft = async () => {
-    if (!respondent.trim()) {
-      setMessage({
-        type: "error",
-        text: "Please enter your name to save draft.",
-      });
-      return;
-    }
-
-    if (Object.keys(answers).length === 0) {
-      setMessage({
-        type: "error",
-        text: "Please answer at least one question to save draft.",
-      });
-      return;
-    }
-
-    setSaving(true);
-    setMessage(null);
-
-    const result = await saveDiagnosticDraft(buildDraftPayload());
-
-    if (result.success) {
-      setMessage({
-        type: "success",
-        text: result.message || `Draft saved! You answered ${answeredCount} of ${questions.length} questions.`,
-      });
-    } else {
-      setMessage({
-        type: "error",
-        text: result.message,
-      });
     }
 
     setSaving(false);
@@ -473,10 +396,7 @@ function Diagnostic() {
               </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 mt-8">
-              <button onClick={handleSaveDraft} disabled={saving} className="rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-4 text-sm font-semibold text-slate-900 shadow-lg transition-all duration-300 hover:from-yellow-300 hover:to-amber-400 hover:scale-[1.02]" >
-                Save Draft
-              </button>
+            <div className="grid gap-4 md:grid-cols-1 mt-8">
               <button onClick={handleSubmit} disabled={saving} className="rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-4 text-sm font-semibold text-slate-900 shadow-lg transition-all duration-300 hover:from-yellow-300 hover:to-amber-400 hover:scale-[1.02]" >
                 {saving ? "Publishing..." : "Publish Data"}
               </button>

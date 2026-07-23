@@ -130,7 +130,7 @@ export async function registerUser(registerForm) {
     }
 
     return {success: true, data, message: "Registration successful."};
-  } catch (error) {
+  } catch {
     return {success: false, message: "Unable to reach backend server", };
   }
 }
@@ -448,26 +448,8 @@ export async function getDiagnosticSubmissionStatus() {
   }
 }
 
-export async function saveDiagnosticDraft(payload) {
-  try {
-    const response = await authFetch("/api/draft", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.success) {
-      return { success: false, message: data?.message || "Unable to save draft." };
-    }
-
-    return { success: true, message: data.message || "Draft saved.", data: data.data };
-  } catch (error) {
-    return { success: false, message: error.message || "Network error." };
-  }
-}
+// /api/draft support was removed from the app-level flow.
+// Public draft operations now go through /api/public-draft only.
 
 export async function savePublicDraft(payload) {
   try {
@@ -528,37 +510,7 @@ export async function deletePublicDraft(respondentId) {
   }
 }
 
-export async function loadDiagnosticDraft() {
-  try {
-    const response = await authFetch("/api/draft");
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok || !data?.success) {
-      return { success: false, message: data?.message || "No draft found." };
-    }
-
-    return { success: true, data: data.data };
-  } catch (error) {
-    return { success: false, message: error.message || "Unable to load draft." };
-  }
-}
-
-export async function clearDiagnosticDraft() {
-  try {
-    const response = await authFetch("/api/draft", {
-      method: "DELETE",
-    });
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok || !data?.success) {
-      return { success: false, message: data?.message || "Unable to clear draft." };
-    }
-
-    return { success: true, message: data.message || "Draft cleared." };
-  } catch (error) {
-    return { success: false, message: error.message || "Unable to clear draft." };
-  }
-}
+// /api/draft load/clear helpers were removed for the same reason.
 
 export async function changePassword(currentPassword, newPassword) {
   try {
