@@ -31,10 +31,7 @@ export default function QuestionsCard({ questions, initialAnswers, draftNotice, 
     () => Math.round((answeredCount / questions.length) * 100),
     [answeredCount, questions.length]
   );
-  console.log("Index:", index);
-  console.log("Question:", index + 1);
-  console.log("Progress:", progress);
-
+  
   const setAnswer = (answer) => {
     setAnswers((prev) => ({ ...prev, [answerKey]: answer }));
   };
