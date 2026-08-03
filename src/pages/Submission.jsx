@@ -364,6 +364,7 @@ export default function Submission() {
     [summary.submitted, summary.drafted, summary.notStarted]
   );
 
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#f3efe6] to-[#e5edf7] p-5">
       <div className="mx-auto max-w-6xl overflow-hidden rounded-[18px] bg-white shadow-[0_18px_42px_rgba(31,45,63,0.14)]">
@@ -572,7 +573,7 @@ export default function Submission() {
                     ))}
                     {paginatedDrafts.length === 0 && (
                       <tr>
-                        <td colSpan={7}  className="py-10 text-center text-gray-500" >No Draft Assessments Found </td>
+                        <td colSpan={7} className="py-10 text-center text-gray-500" >No Draft Assessments Found </td>
                       </tr>
                     )}
                   </tbody>
@@ -618,7 +619,7 @@ export default function Submission() {
           <div className="w-full max-w-5xl rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-6 py-5 rounded-t-lg">
               <h2 className="text-2xl font-bold text-white"> Not Started Assessments </h2>
-              <button onClick={() => setShowNotStartedModal(false)}   className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow/10 text-white transition hover:bg-white/40" > × </button>
+              <button onClick={() => setShowNotStartedModal(false)} className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow/10 text-white transition hover:bg-white/40" > × </button>
             </div>
 
             <div className="mb-4 ml-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">

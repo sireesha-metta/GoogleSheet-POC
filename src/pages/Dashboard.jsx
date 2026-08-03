@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { authFetch } from "../utils/auth";
-import { deleteSubmission } from "../services/Api";
+import { deleteSubmission, downloadSubmissionsExcel } from "../services/Api";
 // import AuthHeader from "../component/AuthHeader.jsx";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
@@ -188,32 +188,59 @@ export default function Dashboard() {
 
 
 
+  const downloadSubmissions = async () => {
+    const result = await downloadSubmissionsExcel();
+
+    if (!result.success || !result.data) {
+      setError(result.message || "Unable to download submissions.");
+      return;
+    }
+
+    const blob = result.data;
+
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "Submissions.xlsx";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+  };
+
+
+
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between bg-gradient-to-r from-[#1f2d3f] to-[#294a67]
-                px-6 py-5 rounded-t-lg">
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-6 py-5 rounded-t-lg">
         <div>
           <h1 className="text-2xl font-bold text-white">Submissions Dashboard</h1>
-          <p className="text-sm text-slate-300">All responses saved to the local database (DB source of truth).</p>
+          <p className="text-sm text-slate-300 mt-1">All responses saved to the local database.</p>
+          {/* (DB source of truth) */}
         </div>
+
+        <button onClick={downloadSubmissions} className="flex items-center gap-2 rounded-md bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-amber-600" > 📥 Download Excel </button>
+
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">
-        <input className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Search respondent" value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)} />
-
-        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}  >
+        <input className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Search respondent" value={searchQuery}  onChange={(e) => setSearchQuery(e.target.value)} />
+        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}  >
           {DATE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
 
-        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}  >
+        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}  >
           {PAGE_SIZE_OPTIONS.map((n) => (
             <option key={n} value={n}>{n} per page</option>
           ))}
-        </select>        
+        </select>
       </div>
 
       <div className="px-6 pb-7 pt-5">

@@ -312,7 +312,7 @@ const Admins = () => {
       firstName: String(adminForm.firstName || "").trim(),
       lastName: String(adminForm.lastName || "").trim(),
       email: String(adminForm.email || "").trim().toLowerCase(),
-      mobile: String(adminForm.mobile || "").replace(/\D/g, "").slice(-10),
+      // mobile: String(adminForm.mobile || "").replace(/\D/g, "").slice(-10),
       password: String(adminForm.password || ""),
     });
 
@@ -384,11 +384,11 @@ const Admins = () => {
                   Last Name{sortIndicator("lastName")}
                 </button>
               </th>
-              <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67]  text-center text-xs font-semibold text-white px-4 py-3">
+              {/* <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67]  text-center text-xs font-semibold text-white px-4 py-3">
                 <button type="button" onClick={() => onSort("mobile")} className="font-semibold">
                   Mobile{sortIndicator("mobile")}
                 </button>
-              </th>
+              </th> */}
               <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67]  text-center text-xs font-semibold text-white px-4 py-3">
                 <button type="button" onClick={() => onSort("email")} className="font-semibold">
                   Email{sortIndicator("email")}
@@ -452,7 +452,7 @@ const Admins = () => {
                         admin.lastName || "-"
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    {/* <td className="px-4 py-3 text-center">
                       {isEditing ? (
                         <input
                           value={editForm.mobile}
@@ -464,7 +464,7 @@ const Admins = () => {
                       ) : (
                         admin.mobile || "-"
                       )}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-center">
                       {isEditing ? (
                         <input

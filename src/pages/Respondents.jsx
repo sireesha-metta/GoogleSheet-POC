@@ -1,19 +1,6 @@
-// const Respondents = () => {
-//   return (
-//     <div>
-//       <h1 className="text-3xl font-bold">Respondents</h1>
-//     </div>
-//   );
-// };
-
-// export default Respondents;
-
-
-
 import { useEffect, useMemo, useState } from "react";
-import { PencilSquareIcon,TrashIcon,CheckIcon,XMarkIcon,UserIcon,PhoneIcon,EnvelopeIcon,LockClosedIcon,QuestionMarkCircleIcon,
-  EyeIcon,EyeSlashIcon,RocketLaunchIcon,} from "@heroicons/react/24/outline";
-import { createRespondent, deleteRespondent, getRespondents, updateRespondent } from "../services/Api";
+import { PencilSquareIcon, TrashIcon, CheckIcon, XMarkIcon, UserIcon, PhoneIcon, EnvelopeIcon, LockClosedIcon, QuestionMarkCircleIcon,EyeIcon, EyeSlashIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
+import { createRespondent, deleteRespondent, downloadRespondentsExcel, getRespondents, updateRespondent } from "../services/Api";
 import { getUserRole } from "../utils/auth";
 import { validators } from "../utils/validation";
 import { INITIAL_REGISTER_ERRORS, INITIAL_REGISTER_FORM } from "../types/register.types";
@@ -299,16 +286,37 @@ const Respondents = () => {
     await loadRespondents();
   };
 
+  const downloadRespondents = async () => {
+    const result = await downloadRespondentsExcel();
+
+    if (!result.success || !result.data) {
+      setError(result.message || "Unable to download respondents.");
+      return;
+    }
+
+    const blob = result.data;
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Respondents.xlsx";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-6 py-5 rounded-t-lg">
         <h1 className="text-2xl font-bold text-white"> LeanIn Respondents </h1>
         <div className="flex items-center gap-3">
-          <button type="button"   onClick={loadRespondents}
+          <button type="button" onClick={loadRespondents}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" >Refresh
           </button>
-          <button
-            type="button"
+          <button type="button" disabled={!isAdmin}
             onClick={() => {
               if (!isAdmin) {
                 setError("Only admin can create respondents.");
@@ -316,10 +324,11 @@ const Respondents = () => {
               }
               setShowCreateModal(true);
             }}
-            disabled={!isAdmin}
-            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60" >
             Create Respondent
+          </button>
+          <button className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60" onClick={downloadRespondents}>
+            📥 Download Excel
           </button>
         </div>
       </div>
@@ -492,8 +501,8 @@ const Respondents = () => {
                       ) : (
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${String(respondent.status || "").toLowerCase() === "active"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-200 text-slate-700"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-200 text-slate-700"
                             }`}
                         >
                           {respondent.status || "Active"}

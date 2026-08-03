@@ -155,3 +155,63 @@ export async function deleteSubmission(id) {
     };
   }
 }
+
+export async function downloadSubmissionsExcel() {
+	try {
+		const response = await authFetch("/api/admin/export/submissions", {
+			method: "GET",
+		});
+
+		if (!response.ok) {
+			return {
+				success: false,
+				message: "Unable to download submissions.",
+				data: null,
+			};
+		}
+
+		const blob = await response.blob();
+
+		return {
+			success: true,
+			message: "Submissions downloaded.",
+			data: blob,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || "Unable to download submissions.",
+			data: null,
+		};
+	}
+}
+
+export async function downloadRespondentsExcel() {
+	try {
+		const response = await authFetch("/api/admin/export/respondents", {
+			method: "GET",
+		});
+
+		if (!response.ok) {
+			return {
+				success: false,
+				message: "Unable to download respondents.",
+				data: null,
+			};
+		}
+
+		const blob = await response.blob();
+
+		return {
+			success: true,
+			message: "Respondents downloaded.",
+			data: blob,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || "Unable to download respondents.",
+			data: null,
+		};
+	}
+}
