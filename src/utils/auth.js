@@ -152,6 +152,7 @@ export async function saveAssessmentRespondent(payload) {
         success: false,
         alreadySubmitted: Boolean(data?.alreadySubmitted),
         message: data?.message || "Unable to save respondent details.",
+        data: data?.data || null,
       };
     }
 

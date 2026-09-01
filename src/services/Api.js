@@ -215,3 +215,74 @@ export async function downloadRespondentsExcel() {
 		};
 	}
 }
+
+export async function getSlotSettingsApi() {
+	try {
+		const response = await authFetch("/api/admin/slots/settings");
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to fetch slot settings." };
+	}
+}
+
+export async function toggleSlotConfigApi(id, is_active) {
+	try {
+		const response = await authFetch("/api/admin/slots/config", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ id, is_active }),
+		});
+		return await response.json();
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to update slot config." };
+	}
+}
+
+export async function blockSlotApi(payload) {
+	try {
+		const response = await authFetch("/api/admin/slots/block", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		});
+		return await response.json();
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to block slot." };
+	}
+}
+
+export async function unblockSlotApi(id) {
+	try {
+		const response = await authFetch(`/api/admin/slots/block/${id}`, {
+			method: "DELETE",
+		});
+		return await response.json();
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to unblock slot." };
+	}
+}
+
+export async function saveShiftApi(payload) {
+	try {
+		const response = await authFetch("/api/admin/shifts/config", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		});
+		return await response.json();
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to save shift config." };
+	}
+}
+
+export async function deleteShiftApi(id) {
+	try {
+		const response = await authFetch(`/api/admin/shifts/${id}`, {
+			method: "DELETE",
+		});
+		return await response.json();
+	} catch (error) {
+		return { success: false, message: error.message || "Failed to delete shift config." };
+	}
+}

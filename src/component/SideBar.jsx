@@ -18,6 +18,8 @@ const Sidebar = () => {
 
         <NavLink to="/dash-submissions" className={menuClass}> Submissions </NavLink>
 
+        <NavLink to="/slots" className={menuClass}> Slot Management </NavLink>
+
         {/* <NavLink to="/upload-file" className={menuClass}> Upload File </NavLink> */}
 
       </nav>

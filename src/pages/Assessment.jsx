@@ -4,6 +4,7 @@ import Hero from "../component/assessment/Hero";
 import UserDetails from "../component/assessment/UserDetails";
 import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
+import CalendarWidget from "../component/assessment/CalendarWidget";
 import ThankYou from "../component/assessment/ThankYou";
 import { getQuestions, isAuthenticated, saveAssessmentRespondent, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
@@ -76,7 +77,7 @@ export default function Assessment() {
 
   const returnToHeroWithFreshDetails = () => {
 
-      clearCompletedAssessments();
+    clearCompletedAssessments();
     resetAssessmentSession();
     setDetailsError("");
     setProfile(EMPTY_PROFILE);
@@ -150,17 +151,6 @@ export default function Assessment() {
     setDetailsSaving(true);
 
     const normalizedEmail = String(details?.email || "").trim().toLowerCase();
-    const existingCompleted = getCompletedAssessment(normalizedEmail || `${details?.firstName || ""}${details?.lastName || ""}`);
-
-    if (existingCompleted) {
-      setProfile({ ...details, ...existingCompleted });
-      setResponses(existingCompleted.answers || {});
-      setCompletedAssessment(existingCompleted);
-      setStep("thankyou");
-      setDetailsSaving(false);
-      return;
-    }
-
     const result = await saveAssessmentRespondent({
       firstName: String(details?.firstName || "").trim(),
       lastName: String(details?.lastName || "").trim(),
@@ -169,14 +159,36 @@ export default function Assessment() {
     });
 
     if (result?.alreadySubmitted) {
+      const returnedData = result?.data || {};
+      const rawSubmittedAt = returnedData?.submittedAt || null;
+      const parseDateStr = (val) => {
+        if (!val) return "";
+        let d = new Date(val);
+        if (isNaN(d.getTime())) {
+          d = new Date(String(val).trim().replace(" ", "T"));
+        }
+        if (isNaN(d.getTime())) return String(val);
+        return d.toLocaleString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      };
+      const formattedDate = parseDateStr(rawSubmittedAt);
+
       const completedEntry = {
         firstName: String(details?.firstName || "").trim(),
         lastName: String(details?.lastName || "").trim(),
         email: String(details?.email || "").trim(),
         mobile: String(details?.mobile || "").trim(),
-        completedAt: new Date().toISOString(),
-        responseCount: Number(existingCompleted?.responseCount || 0),
-        answers: existingCompleted?.answers || {},
+        isExistingSubmission: true,
+        submitted_at: formattedDate,
+        completedAt: rawSubmittedAt,
+        responseCount: 12,
+        answers: {},
       };
 
       persistCompletedAssessment(completedEntry);
@@ -306,7 +318,12 @@ export default function Assessment() {
     await handleSaveDraft(answers, { silent: true });
   };
 
-  const handleAssessmentFinish = async (answers) => {
+  const handleQuestionsDone = (answers) => {
+    setResponses(answers);
+    setStep("calendar");
+  };
+
+  const handleAssessmentFinish = async (answers, bookingDetails = null) => {
     setSubmitError("");
     setDraftError("");
     setDraftInfo("");
@@ -325,6 +342,7 @@ export default function Assessment() {
       totalWeightedScore,
       answersByRow: responseMap,
       questionResponses,
+      bookingDetails,
     };
 
     const result = await submitPublicAssessment(payload);
@@ -367,13 +385,24 @@ export default function Assessment() {
       });
     }
 
+    const nowIso = new Date().toISOString();
+    const formattedNow = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     const completedEntry = {
       firstName: String(profile?.firstName || "").trim(),
       lastName: String(profile?.lastName || "").trim(),
       email: String(profile?.email || "").trim(),
       mobile: String(profile?.mobile || "").trim(),
-      completedAt: new Date().toISOString(),
-      responseCount: Object.keys(answers).length,
+      isExistingSubmission: false,
+      submitted_at: formattedNow,
+      completedAt: nowIso,
+      responseCount: Object.keys(answers).length || 12,
       answers,
     };
 
@@ -387,21 +416,10 @@ export default function Assessment() {
   return (
     <div className="min-h-screen bg-[#1c1c1c] px-4 py-8">
       {/* <div className="mx-auto max-w-5xl rounded-[28px] border-2 border-[#cd3cd3] bg-[#262626] p-5 shadow-[0_20px_45px_rgba(0,0,0,0.6)] md:p-8"> */}
-      <div
-        key={step}
-        className="text-[#c8a85b] transition-all duration-300"
-        style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}
-      >
+      <div key={step} className="text-[#c8a85b] transition-all duration-300" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
 
         {step === "hero" && (
-          <Hero
-            onStart={() => {
-              resetAssessmentSession();
-              setDetailsError("");
-              setProfile(EMPTY_PROFILE);
-              setStep("details");
-            }}
-          />
+          <Hero onStart={() => { resetAssessmentSession(); setDetailsError(""); setProfile(EMPTY_PROFILE); setStep("details"); }} />
         )}
 
         {step === "details" && (
@@ -417,13 +435,9 @@ export default function Assessment() {
             <section>
               <div className="mb-6 mt-2 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
 
-              <p className="text-sm uppercase tracking-[0.06em] text-[#c8a85b]">
-                Loading
-              </p>
+              <p className="text-sm uppercase tracking-[0.06em] text-[#c8a85b]"> Loading </p>
 
-              <h2 className="mt-2 text-lg font-bold text-[#c8a85b] md:text-xl">
-                Preparing assessment questions...
-              </h2>
+              <h2 className="mt-2 text-lg font-bold text-[#c8a85b] md:text-xl"> Preparing assessment questions...</h2>
 
               <p className="mt-3 text-gray-300">
                 Reading configured question file from leadership-assessment backend.
@@ -509,18 +523,19 @@ export default function Assessment() {
               ) : (
                 <QuestionsCard key={assessmentSessionKey} questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
                   draftNotice={draftInfo} onBack={() => setStep("instructions")} onNextAutoSave={handleNextAutoSave}
-                  onSaveDraft={handleSaveDraft} onFinish={handleAssessmentFinish} />
+                  onSaveDraft={handleSaveDraft} onFinish={handleQuestionsDone} />
               )}
             </>
           ))}
 
+        {step === "calendar" && (
+          <CalendarWidget profile={profile} isSubmitting={submitting} submitError={submitError} onBack={() => setStep("assessment")}
+            onConfirm={(bookingDetails) => handleAssessmentFinish(responses, bookingDetails)} />
+        )}
+
         {step === "thankyou" && (
-          <ThankYou
-            profile={completedAssessment || profile}
-            mailInfo={emailInfo}
-            onReturn={returnToHeroWithFreshDetails}
-            responseCount={questionItems.length}
-          />
+          <ThankYou profile={completedAssessment || profile} mailInfo={emailInfo}
+            onReturn={returnToHeroWithFreshDetails} responseCount={questionItems.length} />
         )}
       </div>
     </div>

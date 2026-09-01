@@ -15,6 +15,8 @@ import Admins from "../pages/Admins";
 import Submission from "../pages/Submission";
 import FileUpload from "../pages/FileUpload.jsx";
 
+import SlotManagement from "../pages/SlotManagement.jsx";
+
 function ProtectedRoute({ children }) {
   const location = useLocation();
 
@@ -52,6 +54,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Submission/>} />
         <Route path="/respondents" element={<Respondents />} />
         <Route path="/admins" element={<Admins />} />
+        <Route path="/slots" element={<SlotManagement />} />
         {/* <Route path="/upload-file" element={<FileUpload />} /> */}
       </Route>
 
