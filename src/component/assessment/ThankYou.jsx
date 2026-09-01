@@ -24,6 +24,8 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
     };
   }, [onReturn]);
 
+  const isExisting = Boolean(profile?.isExistingSubmission);
+
   return (
     <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
       <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
@@ -34,11 +36,13 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
           </p>
 
           <h1 className="text-3xl font-bold text-[#c8a85b] md:text-3xl">
-            Assessment Complete
+            {isExisting ? "Assessment Already Completed" : "Assessment Complete"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
-            Thank you for taking the Leadership Reset Diagnostic.
+            {isExisting
+              ? "You have already completed the Leadership Reset Diagnostic."
+              : "Thank you for taking the Leadership Reset Diagnostic."}
           </p>
 
           <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
@@ -49,46 +53,56 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
               </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-[#c8a85b]">Thank you, {profile?.firstName}! </h2>
+                <h2 className="text-2xl font-bold text-[#c8a85b]">Thank you, {profile?.firstName}!</h2>
 
-                <p className="mt-2 text-gray-400">Your assessment has been submitted successfully. </p>
+                <p className="mt-2 text-gray-400">
+                  {isExisting
+                    ? "Your assessment has already been submitted."
+                    : "Your assessment has been submitted successfully!"}
+                </p>
                 {profile?.email ? (
-                  <p className="mt-1 text-sm text-gray-500">
-                    Email ID: <span className="text-[#c8a85b]">{profile.email}</span>
-                  </p>
+                  <div className="mt-2 space-y-1 text-sm text-gray-400">
+                    <p>Email ID: <span className="text-[#c8a85b]">{profile.email}</span></p>
+                    {profile?.submitted_at || profile?.completedAt ? (
+                      <p>
+                        Submitted on:{" "}
+                        <span className="text-[#c8a85b]">
+                          {profile?.submitted_at ||
+                            new Date(profile.completedAt).toLocaleString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
+            {/* <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
               <p className="text-lg text-[#c8a85b]">
                 Questions Answered : {responseCount}
               </p>
+            </div> */}
 
-              {/* <p className="mt-2 text-3xl font-bold text-white">
-                {responseCount}
-              </p> */}
-            </div>
-
-            <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
+            {/* <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4">
               <Mail className="mt-1 text-[#c8a85b]" size={20} />
-
               <div>
                 <p className="font-semibold text-[#c8a85b]">
                   Email Confirmation:
-                  <span
-                    className={`ml-2 text-sm ${mailInfo?.status === "success"
-                        ? "text-green-400"
-                        : mailInfo?.status === "error"
-                          ? "text-red-400"
-                          : "text-gray-400"
-                      }`}
-                  >
+                  <span className={`ml-2 text-sm ${mailInfo?.status === "success"
+                        ? "text-green-400": mailInfo?.status === "error"? "text-red-400": "text-gray-400"
+                      }`}>
                     {mailInfo?.message || "Your assessment has been recorded."}
                   </span>
                 </p>
               </div>
-            </div>
+            </div> */}
 
             <div className="mt-8 flex items-center justify-between">
 
