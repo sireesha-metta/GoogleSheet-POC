@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "../../utils/auth";
 
 function formatTime12h(timeStr, shiftTypeHint = "") {
   if (!timeStr) return "";
@@ -238,10 +239,21 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
       try {
         let res;
         try {
-          res = await fetch(`/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
-          if (!res.ok) throw new Error("Relative fetch failed");
+          res = await fetch(`${API_BASE_URL}/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
+          const contentType = res.headers.get("content-type") || "";
+          if (!res.ok || !contentType.includes("application/json")) {
+            throw new Error("API_BASE_URL fetch non-json");
+          }
         } catch (e) {
-          res = await fetch(`http://localhost:5000/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
+          try {
+            res = await fetch(`/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
+            const contentType = res.headers.get("content-type") || "";
+            if (!res.ok || !contentType.includes("application/json")) {
+              throw new Error("Relative fetch non-json");
+            }
+          } catch (err) {
+            res = await fetch(`http://localhost:5000/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
+          }
         }
         const json = await res.json();
         if (active && json.success) {
