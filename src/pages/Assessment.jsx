@@ -6,7 +6,7 @@ import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
 import CalendarWidget from "../component/assessment/CalendarWidget";
 import ThankYou from "../component/assessment/ThankYou";
-import { getQuestions, isAuthenticated, saveAssessmentRespondent, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft } from "../utils/auth";
+import { getQuestions, isAuthenticated, saveAssessmentRespondent, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft, cancelAssessmentBooking } from "../utils/auth";
 const COMPLETED_ASSESSMENT_STORAGE_KEY = "leadership_assessment_completed";
 const EMPTY_PROFILE = { firstName: "", lastName: "", email: "", mobile: "", id: null };
 
@@ -136,10 +136,18 @@ export default function Assessment() {
       if (emailParam) {
         const decodedEmail = decodeURIComponent(emailParam).trim().toLowerCase();
         const isReschedule = actionParam === "reschedule";
+        const isCancel = actionParam === "cancel";
+
+        setProfile((prev) => ({
+          ...prev,
+          email: decodedEmail,
+          isReschedule,
+          isCancel,
+        }));
 
         saveAssessmentRespondent({
-          firstName: "Lookup",
-          lastName: "User",
+          firstName: "",
+          lastName: "",
           email: decodedEmail,
         }).then((res) => {
           if (activeRef.current) {
@@ -152,15 +160,16 @@ export default function Assessment() {
               mobile: data.mobile || prev.mobile || "",
               id: data.id || prev.id || null,
               isReschedule,
+              isCancel,
             }));
           }
         }).catch(() => {
           if (activeRef.current) {
-            setProfile((prev) => ({ ...prev, email: decodedEmail, isReschedule }));
+            setProfile((prev) => ({ ...prev, email: decodedEmail, isReschedule, isCancel }));
           }
         });
 
-        if (stepParam === "calendar" || isReschedule) {
+        if (stepParam === "calendar" || isReschedule || isCancel) {
           setStep("calendar");
           return () => {
             activeRef.current = false;
@@ -567,7 +576,93 @@ export default function Assessment() {
             </>
           ))}
 
-        {step === "calendar" && (
+        {step === "calendar" && profile?.isCancel ? (
+          <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}>
+            <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
+              <div className="w-full max-w-3xl">
+                <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
+                  LEAN IN COACHING
+                </p>
+
+                <h1 className="text-3xl font-bold text-[#c8a85b] md:text-3xl">
+                  Cancel Discussion Slot
+                </h1>
+
+                <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
+                  Manage or cancel your scheduled 20 mins discussion slot with Lorraine Burns.
+                </p>
+
+                <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
+                  <div className="mb-4 flex items-center gap-4">
+                    <div className="rounded-full bg-red-500/20 p-3">
+                      <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+
+                    <div>
+                      <h2 className="text-2xl font-bold text-[#c8a85b]">
+                        Confirm Slot Cancellation
+                      </h2>
+                      <p className="mt-1 text-gray-300">
+                        Are you sure you want to cancel discussion slot  {" "}
+                        <span className="font-semibold text-[#c8a85b]">{profile.email} </span>?
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4 text-sm text-gray-400"> */}
+                    <p className="leading-relaxed">
+                      Upon cancellation, email notifications will be sent to both you and the coach.
+                      {/* and the time slot will be automatically released back to the available pool for other participants to book. */}
+                    </p>
+                  {/* </div> */}
+
+                  {submitError && (
+                    <p className="mt-4 rounded-xl border border-red-500/50 bg-red-950/40 p-3 text-sm text-red-300">
+                      {submitError}
+                    </p>
+                  )}
+
+                  <div className="mt-8 flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={async () => {
+                        setSubmitting(true);
+                        setSubmitError("");
+                        const res = await cancelAssessmentBooking(profile.email);
+                        setSubmitting(false);
+                        if (res.success) {
+                          const cancelledEntry = { ...profile, isCancelled: true, submitted_at: new Date().toLocaleTimeString() };
+                          setCompletedAssessment(cancelledEntry);
+                          setProfile(cancelledEntry);
+                          setStep("thankyou");
+                        } else {
+                          setSubmitError(res.message || "Failed to cancel appointment.");
+                        }
+                      }}
+                      className="rounded-full bg-red-600 px-8 py-3 text-sm font-semibold text-white transition hover:bg-red-700 shadow-md disabled:opacity-50"
+                    >
+                      {submitting ? "Cancelling..." : "Confirm Cancellation"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => {
+                        setProfile((prev) => ({ ...prev, isCancel: false, isReschedule: true }));
+                      }}
+                      className="rounded-full border border-[#c8a85b] bg-transparent px-8 py-3 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#c8a85b]/10"
+                    >
+                      Keep / Reschedule Slot
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : step === "calendar" && (
           <CalendarWidget profile={profile} isSubmitting={submitting} submitError={submitError} onBack={() => setStep("assessment")}
             onConfirm={(bookingDetails) => handleAssessmentFinish(responses, bookingDetails)} />
         )}

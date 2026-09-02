@@ -583,3 +583,24 @@ export async function uploadFile(payload) {
     return { success: false, message: error.message || "Network error." };
   }
 }
+
+export async function cancelAssessmentBooking(email) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/cancel-booking`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.success) {
+      return { success: false, message: data?.message || "Failed to cancel appointment." };
+    }
+
+    return { success: true, message: data.message || "Appointment cancelled.", data: data.data };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error." };
+  }
+}

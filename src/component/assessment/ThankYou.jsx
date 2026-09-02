@@ -24,8 +24,9 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
     };
   }, [onReturn]);
 
-  const isReschedule = Boolean(profile?.isReschedule);
-  const isExisting = Boolean(profile?.isExistingSubmission) && !isReschedule;
+  const isCancelled = Boolean(profile?.isCancelled);
+  const isReschedule = Boolean(profile?.isReschedule) && !isCancelled;
+  const isExisting = Boolean(profile?.isExistingSubmission) && !isReschedule && !isCancelled;
 
   return (
     <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
@@ -37,49 +38,43 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
           </p>
 
           <h1 className="text-3xl font-bold text-[#c8a85b] md:text-3xl">
-            {isReschedule
-              ? "Discussion Slot Rescheduled"
-              : isExisting
-                ? "Assessment Already Completed"
-                : "Assessment Complete"}
+            {isCancelled ? "Discussion Slot Cancelled" : isReschedule ? "Discussion Slot Rescheduled"
+                : isExisting ? "Assessment Already Completed" : "Assessment Complete"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
-            {isReschedule
-              ? "Your 20 mins discussion slot with Lorraine Burns has been updated."
-              : isExisting
-                ? "You have already completed the Leadership Reset Diagnostic."
-                : "Thank you for taking the Leadership Reset Diagnostic."}
+            {isCancelled ? "Your 20 mins discussion slot has been cancelled as requested."
+              : isReschedule ? "Your 20 mins discussion slot with Lorraine Burns has been updated."
+                : isExisting ? "You have already completed the Leadership Reset Diagnostic."
+                  : "Thank you for taking the Leadership Reset Diagnostic."}
           </p>
 
           <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
 
             <div className="mb-4 flex items-center gap-4">
-              <div className="rounded-full bg-green-500/20 p-3">
-                <CheckCircle2 size={30} className="text-green-400" />
+              <div className={`rounded-full p-3 ${isCancelled ? "bg-red-500/20" : "bg-green-500/20"}`}>
+                <CheckCircle2 size={30} className={isCancelled ? "text-red-400" : "text-green-400"} />
               </div>
 
               <div>
                 <h2 className="text-2xl font-bold text-[#c8a85b]">
-                  Thank you{profile?.firstName ? `, ${profile.firstName}` : ""}!
+                  {isCancelled ? "Slot Cancelled" : "Thank you"}{profile?.firstName ? `, ${profile.firstName}` : ""}!
                 </h2>
 
                 <p className="mt-2 text-gray-400">
-                  {isReschedule
-                    ? "Your 20 mins discussion slot has been rescheduled successfully!"
-                    : isExisting
-                      ? "Your assessment has already been submitted."
-                      : "Your assessment has been submitted successfully!"}
+                  {isCancelled ? "Your discussion slot has been cancelled successfully. Email notifications have been sent to you and the coach."
+                    : isReschedule ? "Your 20 mins discussion slot has been rescheduled successfully!"
+                      : isExisting ? "Your assessment has already been submitted.": "Your assessment has been submitted successfully!"}
                 </p>
                 {profile?.email ? (
                   <div className="mt-2 space-y-1 text-sm text-gray-400">
                     <p>Email ID: <span className="text-[#c8a85b]">{profile.email}</span></p>
                     {profile?.submitted_at || profile?.completedAt ? (
                       <p>
-                        {isReschedule ? "Rescheduled on: " : "Submitted on: "}
+                        {isCancelled ? "Cancelled on: " : isReschedule ? "Rescheduled on: " : "Submitted on: "}
                         <span className="text-[#c8a85b]">
                           {profile?.submitted_at ||
-                            new Date(profile.completedAt).toLocaleString("en-US", {
+                            new Date(profile.completedAt || Date.now()).toLocaleString("en-US", {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
