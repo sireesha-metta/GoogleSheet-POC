@@ -309,17 +309,23 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
     }
     setLocalSubmitting(true);
 
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://leadership-assesments-sigma.vercel.app";
+    const emailParam = encodeURIComponent(profile?.email || "");
+
     const bookingDetails = {
       scheduledDate: formattedSelectedDate,
       scheduledTime: selectedTime,
       timeZone: selectedTimeZone,
-      calendarUrl: "https://calendly.com/leanin-coaching/30min",
-      rescheduleUrl: "https://calendly.com/leanin-coaching/30min",
-      cancelUrl: "https://calendly.com/leanin-coaching/30min",
+      calendarUrl: `${origin}/assessment?step=calendar&email=${emailParam}`,
+      rescheduleUrl: `${origin}/assessment?step=calendar&email=${emailParam}&action=reschedule`,
+      cancelUrl: `${origin}/assessment?step=calendar&email=${emailParam}&action=cancel`,
+      isReschedule: Boolean(profile?.isReschedule),
     };
 
     onConfirm(bookingDetails);
   };
+
+  const isRescheduleMode = Boolean(profile?.isReschedule);
 
   return (
     <section className="min-h-screen bg-[#1c1c1c] text-[#c8a85b]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}>
@@ -331,7 +337,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
               LEAN IN COACHING
             </p>
             <h1 className="text-2xl md:text-4xl font-bold leading-tight text-[#c8a85b]">
-              Schedule Discussion & Complete Assessment
+              {isRescheduleMode ? "Reschedule Your Discussion Slot" : "Schedule Discussion & Complete Assessment"}
             </h1>
             <p className="mt-2 text-base text-gray-400">
               Select your preferred date & time slot for your 20 mins Discussion with Lorraine Burns.
@@ -543,7 +549,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                         </>
                       ) : (
                         <>
-                          <CheckCircle size={18} /> Confirm & Submit Assessment
+                          <CheckCircle size={18} /> {isRescheduleMode ? "Confirm Reschedule" : "Confirm & Submit Assessment"}
                         </>
                       )}
                     </button>

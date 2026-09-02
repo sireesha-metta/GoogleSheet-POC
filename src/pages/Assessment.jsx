@@ -125,15 +125,50 @@ export default function Assessment() {
 
   useEffect(() => {
     const activeRef = { current: true };
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadQuestions(activeRef);
 
-    // const existingCompleted = getLatestCompletedAssessment();
-    // if (existingCompleted) {
-    //   setProfile(existingCompleted);
-    //   setCompletedAssessment(existingCompleted);
-    //   setStep("thankyou");
-    // }
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const stepParam = searchParams.get("step");
+      const emailParam = searchParams.get("email");
+      const actionParam = searchParams.get("action");
+
+      if (emailParam) {
+        const decodedEmail = decodeURIComponent(emailParam).trim().toLowerCase();
+        const isReschedule = actionParam === "reschedule";
+
+        saveAssessmentRespondent({
+          firstName: "Lookup",
+          lastName: "User",
+          email: decodedEmail,
+        }).then((res) => {
+          if (activeRef.current) {
+            const data = res?.data || {};
+            setProfile((prev) => ({
+              ...prev,
+              firstName: data.firstName || prev.firstName || "",
+              lastName: data.lastName || prev.lastName || "",
+              email: decodedEmail,
+              mobile: data.mobile || prev.mobile || "",
+              id: data.id || prev.id || null,
+              isReschedule,
+            }));
+          }
+        }).catch(() => {
+          if (activeRef.current) {
+            setProfile((prev) => ({ ...prev, email: decodedEmail, isReschedule }));
+          }
+        });
+
+        if (stepParam === "calendar" || isReschedule) {
+          setStep("calendar");
+          return () => {
+            activeRef.current = false;
+          };
+        }
+      }
+    }
+
     setStep("hero");
 
     return () => {
@@ -394,12 +429,15 @@ export default function Assessment() {
       minute: "2-digit",
     });
 
+    const isReschedule = Boolean(profile?.isReschedule || bookingDetails?.isReschedule);
+
     const completedEntry = {
       firstName: String(profile?.firstName || "").trim(),
       lastName: String(profile?.lastName || "").trim(),
       email: String(profile?.email || "").trim(),
       mobile: String(profile?.mobile || "").trim(),
       isExistingSubmission: false,
+      isReschedule,
       submitted_at: formattedNow,
       completedAt: nowIso,
       responseCount: Object.keys(answers).length || 12,
@@ -407,6 +445,7 @@ export default function Assessment() {
     };
 
     persistCompletedAssessment(completedEntry);
+    setProfile((prev) => ({ ...prev, ...completedEntry, isReschedule }));
     setCompletedAssessment(completedEntry);
     setResponses(answers);
     setStep("thankyou");
