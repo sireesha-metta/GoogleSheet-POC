@@ -156,6 +156,22 @@ export async function deleteSubmission(id) {
   }
 }
 
+export async function reactivateSubmission(id) {
+  try {
+    const response = await authFetch(`/api/submissions/${id}/reactivate`, {
+      method: "PUT",
+    });
+
+    return parseResponse(response);
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || "Unable to reactivate submission.",
+      data: null,
+    };
+  }
+}
+
 export async function downloadSubmissionsExcel() {
 	try {
 		const response = await authFetch("/api/admin/export/submissions", {

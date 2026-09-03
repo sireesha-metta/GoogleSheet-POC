@@ -113,13 +113,9 @@ export default function Submission() {
         const submissionJson = await submissionResponse.json().catch(() => null);
         const draftJson = await draftResponse.json();
 
-        const submissionRows = Array.isArray(submissionJson?.submissions)
-          ? submissionJson.submissions
-          : [];
+        const submissionRows = Array.isArray(submissionJson?.submissions) ? submissionJson.submissions : [];
 
-        const draftRows = Array.isArray(draftJson.drafts)
-          ? draftJson.drafts
-          : [];
+        const draftRows = Array.isArray(draftJson.drafts) ? draftJson.drafts : [];
 
         if (!active) return;
 
@@ -199,17 +195,14 @@ export default function Submission() {
   }, [respondents, submissions, drafts]);
 
   const notStartedRespondents = useMemo(() => {
-    // Respondents who submitted
     const completedSet = new Set(
       submissions.map((item) => normalizeText(item.respondent))
     );
 
-    // Respondents who have drafts
     const draftedSet = new Set(
       drafts.map((item) => normalizeText(item.respondent_name))
     );
 
-    // Registered respondents who are in neither set
     return respondents.filter((respondent) => {
       const name = normalizeText(getRespondentName(respondent));
 
@@ -221,26 +214,17 @@ export default function Submission() {
   }, [respondents, submissions, drafts]);
 
   const draftAssessmentOptions = useMemo(() => {
-    const options = new Set(
-      drafts
-        .map((item) => String(item?.assessment_type || "").trim())
-        .filter(Boolean)
-    );
+    const options = new Set( drafts.map((item) => String(item?.assessment_type || "").trim()).filter(Boolean));
     return Array.from(options).sort((a, b) => compareValues(a, b, "asc"));
   }, [drafts]);
 
   const filteredSortedDrafts = useMemo(() => {
     const query = normalizeText(draftSearchQuery);
     const filtered = drafts.filter((draft) => {
-      const matchesQuery =
-        !query ||
-        [draft?.respondent_name, draft?.email, draft?.mobile, draft?.assessment_type]
-          .map(normalizeText)
-          .some((value) => value.includes(query));
+      const matchesQuery = !query || [draft?.respondent_name, draft?.email, draft?.mobile, draft?.assessment_type]
+          .map(normalizeText) .some((value) => value.includes(query));
 
-      const matchesAssessment =
-        draftAssessmentFilter === "all" ||
-        String(draft?.assessment_type || "") === draftAssessmentFilter;
+      const matchesAssessment = draftAssessmentFilter === "all" || String(draft?.assessment_type || "") === draftAssessmentFilter;
 
       return matchesQuery && matchesAssessment;
     });
@@ -378,7 +362,6 @@ export default function Submission() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Assessment Status</h2>
-                {/* <p className="text-sm text-slate-600">Pie chart by assessment progress</p> */}
               </div>
               <span className="rounded-full border border-[#cdd5e0] bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                 Total: {summary.total}
@@ -398,15 +381,9 @@ export default function Submission() {
                 <div className="mx-auto h-[320px] w-full max-w-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={chartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={120} innerRadius={80}
-                      >
+                      <Pie data={chartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={120} innerRadius={80} >
                         {chartData.map((entry) => (
-                          <Cell
-                            key={entry.key}
-                            fill={entry.color}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => onStatusClick(entry.key)}
-                          />
+                          <Cell key={entry.key} fill={entry.color} style={{ cursor: "pointer" }} onClick={() => onStatusClick(entry.key)}/>
                         ))}
                       </Pie>
                       <Tooltip />
@@ -479,24 +456,17 @@ export default function Submission() {
             </div>
 
             <div className="mb-4 ml-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">
-              <input
-                type="text"
-                value={draftSearchQuery}
+              <input type="text" value={draftSearchQuery}  placeholder="Search name, email" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 onChange={(e) => {
                   setDraftSearchQuery(e.target.value);
                   setDraftCurrentPage(1);
-                }}
-                placeholder="Search name, email"
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-              />
+                }}/>
 
-              <select
-                value={draftAssessmentFilter}
+              <select value={draftAssessmentFilter} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 onChange={(e) => {
                   setDraftAssessmentFilter(e.target.value);
                   setDraftCurrentPage(1);
-                }}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                }}             
               >
                 <option value="all">All Assessment</option>
                 {draftAssessmentOptions.map((assessment) => (
@@ -504,14 +474,11 @@ export default function Submission() {
                 ))}
               </select>
 
-              <select
-                value={draftPageSize}
+              <select value={draftPageSize}  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 onChange={(e) => {
                   setDraftPageSize(Number(e.target.value));
                   setDraftCurrentPage(1);
-                }}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-              >
+                }}>
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>{size} per page</option>
                 ))}
@@ -587,12 +554,8 @@ export default function Submission() {
                 {Math.min(safeDraftCurrentPage * draftPageSize, filteredSortedDrafts.length)} of {filteredSortedDrafts.length}
               </p>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={safeDraftCurrentPage <= 1}
-                  onClick={() => setDraftCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <button type="button" disabled={safeDraftCurrentPage <= 1} onClick={() => setDraftCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50" >
                   Previous
                 </button>
 
@@ -600,12 +563,7 @@ export default function Submission() {
                   {safeDraftCurrentPage} / {draftTotalPages}
                 </button>
 
-                <button
-                  type="button"
-                  disabled={safeDraftCurrentPage >= draftTotalPages}
-                  onClick={() => setDraftCurrentPage((prev) => Math.min(prev + 1, draftTotalPages))}
-                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <button type="button" disabled={safeDraftCurrentPage >= draftTotalPages} onClick={() => setDraftCurrentPage((prev) => Math.min(prev + 1, draftTotalPages))}  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50" >
                   Next
                 </button>
               </div>
@@ -623,26 +581,17 @@ export default function Submission() {
             </div>
 
             <div className="mb-4 ml-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">
-              <input
-                type="text"
-                value={notStartedSearchQuery}
+              <input type="text" value={notStartedSearchQuery} placeholder="Search name, email" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 onChange={(e) => {
                   setNotStartedSearchQuery(e.target.value);
                   setNotStartedCurrentPage(1);
-                }}
-                placeholder="Search name, email"
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-              />
+                }} />
 
-
-              <select
-                value={notStartedPageSize}
+              <select value={notStartedPageSize}  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 onChange={(e) => {
                   setNotStartedPageSize(Number(e.target.value));
                   setNotStartedCurrentPage(1);
-                }}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-              >
+                }} >
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>{size} per page</option>
                 ))}
@@ -664,11 +613,11 @@ export default function Submission() {
                         <button type="button" onClick={() => onNotStartedSort("mobile")}>Mobile{sortIndicator(notStartedSortKey, notStartedSortDir, "mobile")}</button>
                       </th> */}
                       <th className="px-6 py-4 text-center text-xs font-semibold">
-                        <button type="button" onClick={() => onNotStartedSort("status")}>Status{sortIndicator(notStartedSortKey, notStartedSortDir, "status")}</button>
-                      </th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold">
                         <button type="button" onClick={() => onNotStartedSort("registeredDate")}>Registered Date{sortIndicator(notStartedSortKey, notStartedSortDir, "registeredDate")}</button>
                       </th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold">
+                        <button type="button" onClick={() => onNotStartedSort("status")}>Status{sortIndicator(notStartedSortKey, notStartedSortDir, "status")}</button>
+                      </th>                      
                     </tr>
                   </thead>
 
@@ -678,8 +627,10 @@ export default function Submission() {
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.respondent}</td>
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.email}</td>
                         {/* <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.mobile}</td> */}
-                        <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{person.status || "Pending"}</td>
                         <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{formatDate(person.registeredDate)}</td>
+                        <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">
+                          <span className="rounded-full bg-red-100 px-4 py-1 text-sm font-medium text-red-700"> Not Started </span>
+                        </td>                        
                       </tr>
                     ))}
                     {paginatedNotStarted.length === 0 && (
@@ -698,23 +649,15 @@ export default function Submission() {
                 {Math.min(safeNotStartedCurrentPage * notStartedPageSize, filteredSortedNotStarted.length)} of {filteredSortedNotStarted.length}
               </p>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={safeNotStartedCurrentPage <= 1}
-                  onClick={() => setNotStartedCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <button type="button" disabled={safeNotStartedCurrentPage <= 1} onClick={() => setNotStartedCurrentPage((prev) => Math.max(prev - 1, 1))} className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50" >
                   Previous
                 </button>
                 <button className="rounded-lg bg-[#24384F] px-5 py-2 text-white">
                   {safeNotStartedCurrentPage} / {notStartedTotalPages}
                 </button>
-                <button
-                  type="button"
-                  disabled={safeNotStartedCurrentPage >= notStartedTotalPages}
+                <button type="button" disabled={safeNotStartedCurrentPage >= notStartedTotalPages}
                   onClick={() => setNotStartedCurrentPage((prev) => Math.min(prev + 1, notStartedTotalPages))}
-                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                  className="rounded-lg border px-5 py-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50" >
                   Next
                 </button>
               </div>

@@ -344,20 +344,6 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
             </p>
           </div>
 
-          {/* <div className="mb-6 flex gap-3"> */}
-          {/* <button type="button" onClick={() => setViewMode("calendar")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${viewMode === "calendar" ? "bg-[#c8a85b] text-[#1c1c1c]"
-                  : "border border-[#3a3a3a] bg-[#1f1f1f] text-[#c8a85b] hover:border-[#c8a85b]"
-                }`} >
-              <CalendarIcon size={16} className="inline mr-2" /> Interactive Calendar
-            </button> */}
-          {/* <button type="button" onClick={() => setViewMode("calendly")}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${viewMode === "calendly" ? "bg-[#c8a85b] text-[#1c1c1c]"
-                  : "border border-[#3a3a3a] bg-[#1f1f1f] text-[#c8a85b] hover:border-[#c8a85b]"
-                }`} >
-            </button> */}
-          {/* </div> */}
-
           <div className="rounded-2xl border border-[#cd3cd3] bg-[#262626] p-6 md:p-8 shadow-2xl">
             {viewMode === "calendar" ? (
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -407,9 +393,6 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                     })}
                   </div>
 
-                  {/* <p className="mt-4 text-xs text-gray-400 italic text-center">
-                    * Past dates, weekends (Sat & Sun), and months before current are disabled. Selection is limited up to 3 months into the future.
-                  </p> */}
                   <div className="space-y-3 pt-4 m-4">
                     <button type="button" onClick={onBack} className="rounded-full border border-[#cd3cd3] px-6 py-2.5 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10">
                       Back to Questions
@@ -427,11 +410,8 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
 
                     <div className="mb-4">
                       <label className="block text-xs font-semibold text-gray-400 mb-1">Shift Type</label>
-                      <select
-                        value={selectedShift}
-                        onChange={(e) => setSelectedShift(e.target.value)}
-                        className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2.5 text-xs text-[#E7D9CB] focus:border-[#c8a85b] outline-none"
-                      >
+                      <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)}
+                        className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2.5 text-xs text-[#E7D9CB] focus:border-[#c8a85b] outline-none" >
                         {slotData.loadingSlots || !slotData.shifts || slotData.shifts.length === 0 ? (
                           <option value="MORNING">Loading shift configurations...</option>
                         ) : (
@@ -553,11 +533,6 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                         </>
                       )}
                     </button>
-
-                    {/* <button type="button" onClick={onBack}
-                      className="w-full rounded-full border border-[#cd3cd3] bg-transparent py-2.5 px-6 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10" >
-                      Back to Questions
-                    </button> */}
                   </div>
                 </div>
 

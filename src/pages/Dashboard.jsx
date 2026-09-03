@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { authFetch } from "../utils/auth";
-import { deleteSubmission, downloadSubmissionsExcel } from "../services/Api";
+import { deleteSubmission, reactivateSubmission, downloadSubmissionsExcel } from "../services/Api";
+import { TrashIcon, CheckIcon } from "@heroicons/react/24/outline";
 // import AuthHeader from "../component/AuthHeader.jsx";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
@@ -31,6 +32,7 @@ export default function Dashboard() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -58,7 +60,7 @@ export default function Dashboard() {
   }, []);
 
   // Reset to page 1 when filters or sort changes
-  useEffect(() => { setPage(1); setExpanded(null); }, [searchQuery, dateFilter, pageSize, sortBy, sortOrder]);
+  useEffect(() => { setPage(1); setExpanded(null); }, [searchQuery, dateFilter, statusFilter, pageSize, sortBy, sortOrder]);
 
   const filtered = useMemo(() => {
     const now = new Date();
@@ -69,6 +71,11 @@ export default function Dashboard() {
       const query = String(searchQuery || "").trim().toLowerCase();
 
       if (query && !respondent.includes(query)) return false;
+
+      if (statusFilter !== "all") {
+        const rStatus = String(sub.respondentStatus || sub.status || "Active").toLowerCase();
+        if (rStatus !== statusFilter.toLowerCase()) return false;
+      }
 
       if (dateFilter !== "all") {
         const submittedAt = new Date(sub.timestamp || 0);
@@ -106,7 +113,7 @@ export default function Dashboard() {
 
       return true;
     });
-  }, [submissions, searchQuery, dateFilter]);
+  }, [submissions, searchQuery, dateFilter, statusFilter]);
 
   const sorted = useMemo(() => {
     const data = [...filtered];
@@ -118,6 +125,9 @@ export default function Dashboard() {
       if (sortBy === "respondent") {
         av = String(a.respondent || "").toLowerCase();
         bv = String(b.respondent || "").toLowerCase();
+      } else if (sortBy === "respondentStatus") {
+        av = String(a.respondentStatus || a.status || "Active").toLowerCase();
+        bv = String(b.respondentStatus || b.status || "Active").toLowerCase();
       } else if (sortBy === "timestamp") {
         av = new Date(a.timestamp || 0).getTime();
         bv = new Date(b.timestamp || 0).getTime();
@@ -149,12 +159,31 @@ export default function Dashboard() {
   const clearFilters = () => {
     setSearchQuery("");
     setDateFilter("all");
+    setStatusFilter("active");
   };
 
-  const handleDelete = async (submissionId) => {
-    const confirmed = window.confirm("Delete this submission from the database?");
-    if (!confirmed) return;
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "",
+    confirmColor: "red",
+    onConfirm: null,
+  });
 
+  const handleDelete = (submissionId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Mark Submission as Inactive",
+      message: "Are you sure you want to mark this submission as inactive? It will be moved to the Inactive view.",
+      confirmText: "Yes, Mark Inactive",
+      confirmColor: "red",
+      onConfirm: () => handleConfirmDelete(submissionId),
+    });
+  };
+
+  const handleConfirmDelete = async (submissionId) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     setDeleteError("");
     setDeletingId(submissionId);
 
@@ -162,11 +191,51 @@ export default function Dashboard() {
     setDeletingId(null);
 
     if (!result.success) {
-      setDeleteError(result.message || "Unable to delete submission.");
+      setDeleteError(result.message || "Unable to update submission status.");
       return;
     }
 
-    setSubmissions((prev) => prev.filter((item) => Number(item.id) !== Number(submissionId)));
+    setSubmissions((prev) =>
+      prev.map((item) =>
+        Number(item.id) === Number(submissionId)
+          ? { ...item, respondentStatus: "Inactive", status: "Inactive" }
+          : item
+      )
+    );
+    setExpanded(null);
+  };
+
+  const handleReactivate = (submissionId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Reactivate Submission",
+      message: "Are you sure you want to reactivate this submission? It will be moved back to the Active view.",
+      confirmText: "Yes, Reactivate",
+      confirmColor: "emerald",
+      onConfirm: () => handleConfirmReactivate(submissionId),
+    });
+  };
+
+  const handleConfirmReactivate = async (submissionId) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+    setDeleteError("");
+    setDeletingId(submissionId);
+
+    const result = await reactivateSubmission(submissionId);
+    setDeletingId(null);
+
+    if (!result.success) {
+      setDeleteError(result.message || "Unable to reactivate submission.");
+      return;
+    }
+
+    setSubmissions((prev) =>
+      prev.map((item) =>
+        Number(item.id) === Number(submissionId)
+          ? { ...item, respondentStatus: "Active", status: "Active" }
+          : item
+      )
+    );
     setExpanded(null);
   };
 
@@ -236,6 +305,12 @@ export default function Dashboard() {
           ))}
         </select>
 
+        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="active">Active Respondents</option>
+          <option value="inactive">Inactive Respondents</option>
+          <option value="all">All Status</option>
+        </select>
+
         <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}  >
           {PAGE_SIZE_OPTIONS.map((n) => (
             <option key={n} value={n}>{n} per page</option>
@@ -273,6 +348,9 @@ export default function Dashboard() {
                       <button className="text-xs font-semibold text-white" onClick={() => handleSort("respondent")}>Respondent {sortIndicator("respondent")}</button>
                     </th>
                     <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-3 py-2 text-center text-xs font-semibold text-white">
+                      <button className="text-xs font-semibold text-white" onClick={() => handleSort("respondentStatus")}>Status {sortIndicator("respondentStatus")}</button>
+                    </th>
+                    <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-3 py-2 text-center text-xs font-semibold text-white">
                       <button className="text-xs font-semibold text-white" onClick={() => handleSort("timestamp")}>Submitted At {sortIndicator("timestamp")}</button>
                     </th>
                     <th className="whitespace-nowrap bg-gradient-to-r from-[#1f2d3f] to-[#294a67] px-3 py-2 text-center text-xs font-semibold text-white">
@@ -295,6 +373,15 @@ export default function Dashboard() {
                         <tr key={globalIdx} className={i % 2 === 0 ? "bg-[#f8f6f2]" : "bg-white"}>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{globalIdx + 1}</td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle font-semibold text-[#1a1a2e] text-center">{sub.respondent || "—"}</td>
+                          <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-center">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              String(sub.respondentStatus || sub.status || "Active").toLowerCase() === "active"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-200 text-slate-700"
+                            }`}>
+                              {String(sub.respondentStatus || sub.status || "Active").toLowerCase() === "active" ? "Active" : "Inactive"}
+                            </span>
+                          </td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 align-middle text-[#1a1a2e] text-center">{formatDate(sub.timestamp)}</td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 text-center align-middle font-bold text-blue-700">{sub.totalScore}</td>
                           <td className="border-b border-[#e8ecf0] px-3 py-2 text-center align-middle font-bold text-emerald-700">{sub.totalWeightedScore}</td>
@@ -306,20 +393,30 @@ export default function Dashboard() {
                               >
                                 {isOpen ? "Hide ▲" : "View ▼"}
                               </button>
-                              <button
-                                className="whitespace-nowrap rounded-md border border-red-400 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 disabled:opacity-50"
-                                onClick={() => handleDelete(sub.id)}
-                                disabled={deletingId === sub.id}
-                              >
-                                {deletingId === sub.id ? "Deleting..." : "Delete"}
-                              </button>
+                              {String(sub.respondentStatus || sub.status || "Active").toLowerCase() === "inactive" ? (
+                                <button
+                                  className="whitespace-nowrap rounded-md border border-emerald-400 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 disabled:opacity-50"
+                                  onClick={() => handleReactivate(sub.id)}
+                                  disabled={deletingId === sub.id}
+                                >
+                                  {deletingId === sub.id ? "Updating..." : "Activate"}
+                                </button>
+                              ) : (
+                                <button
+                                  className="whitespace-nowrap rounded-md border border-red-400 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 disabled:opacity-50"
+                                  onClick={() => handleDelete(sub.id)}
+                                  disabled={deletingId === sub.id}
+                                >
+                                  {deletingId === sub.id ? "Updating..." : "Delete"}
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
 
                         {isOpen && (
                           <tr key={`d-${globalIdx}`}>
-                            <td colSpan={6} className="bg-[#f0ece6] pb-4 pl-9 pt-1">
+                            <td colSpan={7} className="bg-[#f0ece6] pb-4 pl-9 pt-1">
                               <table className="mt-2 w-full border-collapse text-[13px]">
                                 <thead>
                                   <tr>
@@ -375,8 +472,47 @@ export default function Dashboard() {
           </>
         )}
       </div>
-      {/* </div> */}
-      {/* </main> */}
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 text-center">
+            <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+              confirmModal.confirmColor === "red" ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
+            }`}>
+              {confirmModal.confirmColor === "red" ? (
+                <TrashIcon className="h-7 w-7" />
+              ) : (
+                <CheckIcon className="h-7 w-7" />
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-800">{confirmModal.title}</h3>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">{confirmModal.message}</p>
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-1/2 rounded-xl border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className={`w-1/2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-md transition ${
+                  confirmModal.confirmColor === "red"
+                    ? "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                }`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

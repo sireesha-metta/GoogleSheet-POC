@@ -33,7 +33,7 @@ const Respondents = () => {
   const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
   const [actionBusyId, setActionBusyId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [sortKey, setSortKey] = useState("firstName");
   const [sortDir, setSortDir] = useState("asc");
   const [pageSize, setPageSize] = useState(10);
@@ -43,6 +43,15 @@ const Respondents = () => {
   const [createErrors, setCreateErrors] = useState(INITIAL_REGISTER_ERRORS);
   const [createBusy, setCreateBusy] = useState(false);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "",
+    confirmColor: "red",
+    onConfirm: null,
+  });
 
   const loadRespondents = async () => {
     setLoading(true);
@@ -108,21 +117,61 @@ const Respondents = () => {
     cancelEdit();
   };
 
-  const removeRespondent = async (id, fullName) => {
-    const ok = window.confirm(`Delete respondent ${fullName}?`);
-    if (!ok) return;
+  const removeRespondent = (id, fullName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Mark respondent as inactive?",
+      message: `Do you want to mark respondent "${fullName}" as inactive? They will be moved to the Inactive list.`,
+      confirmText: "Yes, Mark Inactive",
+      confirmColor: "red",
+      onConfirm: () => handleConfirmRemove(id),
+    });
+  };
 
+  const handleConfirmRemove = async (id) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     setActionBusyId(id);
     setError("");
 
     const result = await deleteRespondent(id);
     if (!result.success) {
-      setError(result.message || "Unable to delete respondent.");
+      setError(result.message || "Unable to mark respondent as inactive.");
       setActionBusyId(null);
       return;
     }
 
-    setRespondents((prev) => prev.filter((row) => row.id !== id));
+    setRespondents((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, status: "Inactive" } : row))
+    );
+    setActionBusyId(null);
+  };
+
+  const reactivateRespondent = (id, fullName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Reactivate Respondent",
+      message: `Are you sure you want to reactivate respondent "${fullName}"? They will be moved back to the Active list.`,
+      confirmText: "Yes, Reactivate",
+      confirmColor: "emerald",
+      onConfirm: () => handleConfirmReactivate(id),
+    });
+  };
+
+  const handleConfirmReactivate = async (id) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+    setActionBusyId(id);
+    setError("");
+
+    const result = await updateRespondent(id, { status: "Active" });
+    if (!result.success) {
+      setError(result.message || "Unable to reactivate respondent.");
+      setActionBusyId(null);
+      return;
+    }
+
+    setRespondents((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, status: "Active" } : row))
+    );
     setActionBusyId(null);
   };
 
@@ -347,9 +396,9 @@ const Respondents = () => {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
         >
+          <option value="active">Active Respondents</option>
+          <option value="inactive">Inactive Respondents</option>
           <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
         </select>
 
         {/* <select value={sortKey}  onChange={(e) => onSort(e.target.value)}
@@ -532,6 +581,23 @@ const Respondents = () => {
                               <XMarkIcon className="h-4 w-4" />
                             </button>
                           </>
+                        ) : String(respondent.status || "Active").toLowerCase() === "inactive" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              reactivateRespondent(
+                                respondent.id,
+                                `${respondent.firstName || ""} ${respondent.lastName || ""}`.trim() ||
+                                respondent.email ||
+                                "this respondent"
+                              )
+                            }
+                            disabled={isBusy || editingId !== null}
+                            className="whitespace-nowrap rounded-md border border-emerald-400 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+                            title="Reactivate"
+                          >
+                            {isBusy ? "Updating..." : "Activate"}
+                          </button>
                         ) : (
                           <>
                             <button
@@ -555,7 +621,7 @@ const Respondents = () => {
                               }
                               disabled={isBusy || editingId !== null}
                               className="rounded-md border border-red-500 p-2 text-red-600 hover:bg-red-50 disabled:opacity-60"
-                              title="Delete"
+                              title="Mark Inactive"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -723,6 +789,47 @@ const Respondents = () => {
               >
                 <RocketLaunchIcon className="h-5 w-5" />
                 {createBusy ? "Registering..." : "Register Here"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 text-center">
+            <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+              confirmModal.confirmColor === "red" ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
+            }`}>
+              {confirmModal.confirmColor === "red" ? (
+                <TrashIcon className="h-7 w-7" />
+              ) : (
+                <CheckIcon className="h-7 w-7" />
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-800">{confirmModal.title}</h3>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">{confirmModal.message}</p>
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-1/2 rounded-xl border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className={`w-1/2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-md transition ${
+                  confirmModal.confirmColor === "red"
+                    ? "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                }`}
+              >
+                {confirmModal.confirmText}
               </button>
             </div>
           </div>
