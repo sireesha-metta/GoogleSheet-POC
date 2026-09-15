@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 
 import Hero from "../component/assessment/Hero";
 import UserDetails from "../component/assessment/UserDetails";
+import DiagnosticHub from "../component/assessment/DiagnosticHub";
 import Instructions from "../component/assessment/Instructions";
 import QuestionsCard from "../component/assessment/QuestionsCard";
+import OneWordInput from "../component/assessment/OneWordInput";
 import CalendarWidget from "../component/assessment/CalendarWidget";
 import ThankYou from "../component/assessment/ThankYou";
 import { getQuestions, isAuthenticated, saveAssessmentRespondent, submitPublicAssessment, savePublicDraft, loadPublicDraft, deletePublicDraft, cancelAssessmentBooking } from "../utils/auth";
@@ -42,17 +44,12 @@ const persistCompletedAssessment = (entry) => {
   writeCompletedAssessments(entries);
 };
 
-const getCompletedAssessment = (value) => {
-  const key = normalizeAssessmentLookupKey(value);
-  const entries = readCompletedAssessments();
-  return entries[key] || null;
-};
-
 export default function Assessment() {
   const [step, setStep] = useState("hero");
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [assessmentSessionKey, setAssessmentSessionKey] = useState(0);
   const [responses, setResponses] = useState({});
+  const [oneWordAnswers, setOneWordAnswers] = useState([]);
   const [questionItems, setQuestionItems] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [questionsError, setQuestionsError] = useState("");
@@ -68,6 +65,7 @@ export default function Assessment() {
 
   const resetAssessmentSession = () => {
     setResponses({});
+    setOneWordAnswers([]);
     setDraftInfo("");
     setDraftError("");
     setSubmitError("");
@@ -76,8 +74,7 @@ export default function Assessment() {
   };
 
   const returnToHeroWithFreshDetails = () => {
-
-    clearCompletedAssessments();
+    localStorage.removeItem(COMPLETED_ASSESSMENT_STORAGE_KEY);
     resetAssessmentSession();
     setDetailsError("");
     setProfile(EMPTY_PROFILE);
@@ -185,16 +182,11 @@ export default function Assessment() {
     };
   }, []);
 
-  const clearCompletedAssessments = () => {
-    localStorage.removeItem(COMPLETED_ASSESSMENT_STORAGE_KEY);
-  };
-
   const handleDetailsContinue = async (details) => {
     setDetailsError("");
     resetAssessmentSession();
     setDetailsSaving(true);
 
-    const normalizedEmail = String(details?.email || "").trim().toLowerCase();
     const result = await saveAssessmentRespondent({
       firstName: String(details?.firstName || "").trim(),
       lastName: String(details?.lastName || "").trim(),
@@ -205,31 +197,13 @@ export default function Assessment() {
     if (result?.alreadySubmitted) {
       const returnedData = result?.data || {};
       const rawSubmittedAt = returnedData?.submittedAt || null;
-      const parseDateStr = (val) => {
-        if (!val) return "";
-        let d = new Date(val);
-        if (isNaN(d.getTime())) {
-          d = new Date(String(val).trim().replace(" ", "T"));
-        }
-        if (isNaN(d.getTime())) return String(val);
-        return d.toLocaleString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        });
-      };
-      const formattedDate = parseDateStr(rawSubmittedAt);
-
       const completedEntry = {
         firstName: String(details?.firstName || "").trim(),
         lastName: String(details?.lastName || "").trim(),
         email: String(details?.email || "").trim(),
         mobile: String(details?.mobile || "").trim(),
         isExistingSubmission: true,
-        submitted_at: formattedDate,
+        submitted_at: rawSubmittedAt || new Date().toLocaleString(),
         completedAt: rawSubmittedAt,
         responseCount: 12,
         answers: {},
@@ -249,14 +223,12 @@ export default function Assessment() {
       return;
     }
 
-    // Merge returned respondent id (for public drafts/submissions) into profile
     const returned = result.data || {};
     const respondentId = returned.id || (returned?.data && returned.data.id) || null;
     setProfile({ ...details, id: respondentId });
     setResponses({});
     setAssessmentSessionKey((current) => current + 1);
 
-    // attempt to load any public draft for this respondent so we can resume
     if (!isAuthenticated() && Number.isFinite(Number(respondentId)) && Number(respondentId) > 0) {
       try {
         const draftRes = await loadPublicDraft(respondentId);
@@ -265,12 +237,10 @@ export default function Assessment() {
           setResponses(draftData.answersByRow || {});
           setDraftInfo(`Resume saved progress — ${Number(draftData.answeredCount || 0)}/${Number(draftData.totalQuestions || 0)} answered.`);
         }
-      } catch {
-        // ignore draft load errors — user can still proceed
-      }
+      } catch {}
     }
 
-    setStep("instructions");
+    setStep("hub");
     setDetailsSaving(false);
   };
 
@@ -307,7 +277,6 @@ export default function Assessment() {
 
   const handleSaveDraft = async (answers, options = {}) => {
     const { silent = false } = options;
-
     if (!silent) {
       setDraftInfo("");
       setDraftError("");
@@ -322,10 +291,6 @@ export default function Assessment() {
 
     const { responseMap, questionResponses, totalScore, totalWeightedScore, answeredCount } = buildAssessmentMetrics(answers);
 
-    // if (!silent) {
-    //   setDraftSaving(true);
-    // }
-
     const payload = {
       respondent: `${String(profile?.firstName || "").trim()} ${String(profile?.lastName || "").trim()}`.trim() || "Anonymous",
       savedAt: new Date().toISOString(),
@@ -335,6 +300,7 @@ export default function Assessment() {
       totalWeightedScore,
       answersByRow: responseMap,
       questionResponses,
+      oneWordAnswers,
     };
 
     const publicPayload = {
@@ -364,6 +330,11 @@ export default function Assessment() {
 
   const handleQuestionsDone = (answers) => {
     setResponses(answers);
+    setStep("oneword");
+  };
+
+  const handleOneWordDone = (words) => {
+    setOneWordAnswers(words);
     setStep("calendar");
   };
 
@@ -386,13 +357,14 @@ export default function Assessment() {
       totalWeightedScore,
       answersByRow: responseMap,
       questionResponses,
+      oneWordAnswers,
       bookingDetails,
     };
 
     const result = await submitPublicAssessment(payload);
 
     if (result?.alreadySubmitted) {
-      setSubmitError(result.message || "Assessment already submitted. Assignment already done.");
+      setSubmitError(result.message || "Assessment already submitted.");
       setSubmitting(false);
       return;
     }
@@ -403,13 +375,8 @@ export default function Assessment() {
       return;
     }
 
-    const draftResult = await deletePublicDraft(profile.id);
+    await deletePublicDraft(profile.id);
 
-    if (!draftResult.success) {
-      console.error("Failed to delete draft:", draftResult.message);
-    }
-
-    // inform user about email delivery status when available
     if (typeof result.mailSent !== "undefined") {
       if (result.mailSent) {
         setEmailInfo({
@@ -422,11 +389,6 @@ export default function Assessment() {
           message: `Assessment complete — unable to email results to ${String(profile?.email || "").trim()}`,
         });
       }
-    } else {
-      setEmailInfo({
-        status: "neutral",
-        message: "Assessment complete — email status not available.",
-      });
     }
 
     const nowIso = new Date().toISOString();
@@ -451,6 +413,7 @@ export default function Assessment() {
       completedAt: nowIso,
       responseCount: Object.keys(answers).length || 12,
       answers,
+      oneWordAnswers,
     };
 
     persistCompletedAssessment(completedEntry);
@@ -463,9 +426,7 @@ export default function Assessment() {
 
   return (
     <div className="min-h-screen bg-[#1c1c1c] px-4 py-8">
-      {/* <div className="mx-auto max-w-5xl rounded-[28px] border-2 border-[#cd3cd3] bg-[#262626] p-5 shadow-[0_20px_45px_rgba(0,0,0,0.6)] md:p-8"> */}
-      <div key={step} className="text-[#c8a85b] transition-all duration-300" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
-
+      <div key={step} className="text-[#c8a85b] transition-all duration-300" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}>
         {step === "hero" && (
           <Hero onStart={() => { resetAssessmentSession(); setDetailsError(""); setProfile(EMPTY_PROFILE); setStep("details"); }} />
         )}
@@ -474,196 +435,76 @@ export default function Assessment() {
           <UserDetails initialData={profile} continueError={detailsError} continueSaving={detailsSaving} onBack={returnToHeroWithFreshDetails} onContinue={handleDetailsContinue} />
         )}
 
+        {step === "hub" && (
+          <DiagnosticHub profile={profile} onBack={() => setStep("details")} onSelectDiagnostic={() => setStep("instructions")} />
+        )}
+
         {step === "instructions" && (
-          <Instructions onBack={() => setStep("details")} onBegin={() => setStep("assessment")} />
+          <Instructions onBack={() => setStep("hub")} onBegin={() => setStep("assessment")} />
         )}
 
         {step === "assessment" &&
           (questionsLoading ? (
-            <section>
-              <div className="mb-6 mt-2 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
-
+            <section className="text-center py-20">
               <p className="text-sm uppercase tracking-[0.06em] text-[#c8a85b]"> Loading </p>
-
               <h2 className="mt-2 text-lg font-bold text-[#c8a85b] md:text-xl"> Preparing assessment questions...</h2>
-
-              <p className="mt-3 text-gray-300">
-                Reading configured question file from leadership-assessment backend.
-              </p>
-
-              <div className="mt-4 h-2 w-40 animate-pulse rounded-full bg-[#cd3cd3]" />
-
-              <div className="mb-2 mt-8 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
+              <div className="mt-4 mx-auto h-2 w-40 animate-pulse rounded-full bg-[#cd3cd3]" />
             </section>
           ) : questionItems.length === 0 ? (
-            <section>
-              <div className="mb-6 mt-2 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
-
-              <p className="text-sm uppercase tracking-[0.06em] text-red-400">
-                Question Load Failed
-              </p>
-
-              <h2 className="mt-2 text-lg font-bold text-[#c8a85b] md:text-xl">
-                Questions could not be loaded
-              </h2>
-
-              <p className="mt-3 text-red-300">
-                {questionsError ||
-                  "No questions returned from source file."}
-              </p>
-
-              <div className="mb-5 mt-5 flex flex-wrap gap-3">
-                <button type="button" onClick={() => setStep("instructions")} className="rounded-full border border-[#cd3cd3] px-5 py-2.5 text-sm text-[#c8a85b] transition hover:bg-[#cd3cd3]/10" >  Back  </button>
-
-                <button type="button" onClick={() => loadQuestions()} className="rounded-full bg-[#c8a85b] px-5 py-2.5 text-sm font-semibold text-[#1c1c1c] transition hover:bg-[#d8b96b]" > Retry </button>
-              </div>
-
-              <div className="mb-2 w-full max-w-[480px] border-t border-dashed border-[#cd3cd3]" />
+            <section className="text-center py-20">
+              <p className="text-sm uppercase tracking-[0.06em] text-red-400">Question Load Failed</p>
+              <p className="mt-3 text-red-300">{questionsError || "No questions returned from source file."}</p>
+              <button type="button" onClick={() => loadQuestions()} className="mt-4 rounded-full bg-[#c8a85b] px-5 py-2.5 text-sm font-semibold text-[#1c1c1c]"> Retry </button>
             </section>
           ) : (
             <>
-              {submitError && (
-                <p className="mb-3 rounded-lg border border-red-500 bg-red-900/20 px-3 py-2 text-sm text-red-300">
-                  {submitError}
-                </p>
-              )}
-
-              {draftError && (
-                <p className="mb-3 rounded-lg border border-red-500 bg-red-900/20 px-3 py-2 text-sm text-red-300">
-                  {draftError}
-                </p>
-              )}
-
-              {submitting ? (
-                <section className="min-h-screen bg-[#1c1c1c]">
-                  <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
-                    <div className="w-full max-w-3xl">
-
-                      <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
-                        LEAN IN COACHING
-                      </p>
-
-                      <h1 className="text-4xl font-bold text-[#c8a85b] md:text-5xl">Saving Assessment</h1>
-
-                      <p className="mt-5 text-lg text-gray-400">Please wait while we securely save your responses.</p>
-
-                      <div className="mt-10 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
-
-                        <div className="flex items-center gap-4">
-                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#cd3cd3] border-t-transparent" />
-
-                          <div>
-                            <p className="font-semibold text-[#c8a85b]">Saving your assessment...</p>
-
-                            <p className="mt-1 text-sm text-gray-400"> Do not close this window.</p>
-                          </div>
-                        </div>
-
-                        <div className="mt-8 h-3 overflow-hidden rounded-full bg-[#1c1c1c]">
-                          <div className="h-full w-1/2 animate-pulse rounded-full bg-[#c8a85b]" />
-                        </div>
-
-                      </div>
-
-                    </div>
-                  </div>
-                </section>
-              ) : (
-                <QuestionsCard key={assessmentSessionKey} questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
-                  draftNotice={draftInfo} onBack={() => setStep("instructions")} onNextAutoSave={handleNextAutoSave}
-                  onSaveDraft={handleSaveDraft} onFinish={handleQuestionsDone} />
-              )}
+              {submitError && <p className="mb-3 rounded-lg border border-red-500 bg-red-900/20 px-3 py-2 text-sm text-red-300">{submitError}</p>}
+              {draftError && <p className="mb-3 rounded-lg border border-red-500 bg-red-900/20 px-3 py-2 text-sm text-red-300">{draftError}</p>}
+              <QuestionsCard key={assessmentSessionKey} questions={questionItems} initialAnswers={responses} draftSaving={draftSaving}
+                draftNotice={draftInfo} onBack={() => setStep("instructions")} onNextAutoSave={handleNextAutoSave}
+                onSaveDraft={handleSaveDraft} onFinish={handleQuestionsDone} />
             </>
           ))}
+
+        {step === "oneword" && (
+          <OneWordInput onBack={() => setStep("assessment")} onContinue={handleOneWordDone} />
+        )}
 
         {step === "calendar" && profile?.isCancel ? (
           <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}>
             <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
               <div className="w-full max-w-3xl">
-                <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
-                  LEAN IN COACHING
-                </p>
-
-                <h1 className="text-3xl font-bold text-[#c8a85b] md:text-3xl">
-                  Cancel Discussion Slot
-                </h1>
-
-                <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
-                  Manage or cancel your scheduled 20 mins discussion slot with Lorraine Burns.
-                </p>
-
+                <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">LEAN IN COACHING</p>
+                <h1 className="text-3xl font-bold text-[#c8a85b]">Cancel Discussion Slot</h1>
+                <p className="mt-2 text-lg text-gray-400">Manage or cancel your scheduled discussion slot with Lorraine Burns.</p>
                 <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
-                  <div className="mb-4 flex items-center gap-4">
-                    <div className="rounded-full bg-red-500/20 p-3">
-                      <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-
-                    <div>
-                      <h2 className="text-2xl font-bold text-[#c8a85b]">
-                        Confirm Slot Cancellation
-                      </h2>
-                      <p className="mt-1 text-gray-300">
-                        Are you sure you want to cancel discussion slot  {" "}
-                        <span className="font-semibold text-[#c8a85b]">{profile.email} </span>?
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4 text-sm text-gray-400"> */}
-                    <p className="leading-relaxed">
-                      Upon cancellation, email notifications will be sent to both you and the coach.
-                      {/* and the time slot will be automatically released back to the available pool for other participants to book. */}
-                    </p>
-                  {/* </div> */}
-
-                  {submitError && (
-                    <p className="mt-4 rounded-xl border border-red-500/50 bg-red-950/40 p-3 text-sm text-red-300">
-                      {submitError}
-                    </p>
-                  )}
-
-                  <div className="mt-8 flex flex-wrap items-center gap-4">
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={async () => {
-                        setSubmitting(true);
-                        setSubmitError("");
-                        const res = await cancelAssessmentBooking(profile.email);
-                        setSubmitting(false);
-                        if (res.success) {
-                          const cancelledEntry = { ...profile, isCancelled: true, submitted_at: new Date().toLocaleTimeString() };
-                          setCompletedAssessment(cancelledEntry);
-                          setProfile(cancelledEntry);
-                          setStep("thankyou");
-                        } else {
-                          setSubmitError(res.message || "Failed to cancel appointment.");
-                        }
-                      }}
-                      className="rounded-full bg-red-600 px-8 py-3 text-sm font-semibold text-white transition hover:bg-red-700 shadow-md disabled:opacity-50"
-                    >
-                      {submitting ? "Cancelling..." : "Confirm Cancellation"}
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => {
-                        setProfile((prev) => ({ ...prev, isCancel: false, isReschedule: true }));
-                      }}
-                      className="rounded-full border border-[#c8a85b] bg-transparent px-8 py-3 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#c8a85b]/10"
-                    >
-                      Keep / Reschedule Slot
-                    </button>
-                  </div>
+                  <p className="text-gray-300 mb-6">Confirm cancellation for <span className="font-semibold text-[#c8a85b]">{profile.email}</span>?</p>
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      const res = await cancelAssessmentBooking(profile.email);
+                      setSubmitting(false);
+                      if (res.success) {
+                        const cancelledEntry = { ...profile, isCancelled: true, submitted_at: new Date().toLocaleTimeString() };
+                        setCompletedAssessment(cancelledEntry);
+                        setProfile(cancelledEntry);
+                        setStep("thankyou");
+                      } else {
+                        setSubmitError(res.message || "Failed to cancel appointment.");
+                      }
+                    }}
+                    className="rounded-full bg-red-600 px-8 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+                  >
+                    Confirm Cancellation
+                  </button>
                 </div>
               </div>
             </div>
           </section>
         ) : step === "calendar" && (
-          <CalendarWidget profile={profile} isSubmitting={submitting} submitError={submitError} onBack={() => setStep("assessment")}
+          <CalendarWidget profile={profile} isSubmitting={submitting} submitError={submitError} onBack={() => setStep("oneword")}
             onConfirm={(bookingDetails) => handleAssessmentFinish(responses, bookingDetails)} />
         )}
 
@@ -673,6 +514,5 @@ export default function Assessment() {
         )}
       </div>
     </div>
-    // </div>
   );
 }
