@@ -70,7 +70,7 @@ export default function Hero({ onStart }) {
             onClick={onStart}
             className="mt-14 inline-flex items-center gap-3 rounded-full border border-[#cd3cd3] bg-[#c8a85b] px-8 py-4 text-lg font-semibold text-[#1c1c1c] transition-all duration-300 hover:opacity-90"
           >
-            Begin Assessment
+            Begin assessment
             <ArrowRight size={20} />
           </button>
 

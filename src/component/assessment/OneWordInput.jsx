@@ -37,7 +37,7 @@ export default function OneWordInput({ onContinue, onBack }) {
             Additional Data Point: 3 One-Word Answers
           </h1>
           <p className="mb-6 text-base text-gray-300">
-            Before submitting your diagnostic, please provide <strong className="text-[#c8a85b]">3 single words</strong> that best describe your current leadership or team experience. These will serve as a baseline comparison for your team diagnostic.
+            Before submitting your diagnostic, please provide <strong className="text-[#c8a85b]">3 single words</strong> that best describe your current leadership experience.
           </p>
 
           <form onSubmit={handleSubmit} className="rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8 shadow-xl">

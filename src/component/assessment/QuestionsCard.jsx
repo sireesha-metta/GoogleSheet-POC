@@ -33,9 +33,14 @@ export default function QuestionsCard({ questions, initialAnswers, draftNotice, 
     }
   }, [safeIndex]);
 
+  const answeredCount = useMemo(
+    () => Object.values(answers).filter((value) => value !== undefined && value !== null && value !== "").length,
+    [answers]
+  );
+
   const progress = useMemo(
-    () => Math.round(((safeIndex + 1) / questions.length) * 100),
-    [safeIndex, questions.length]
+    () => Math.round((answeredCount / Math.max(questions.length, 1)) * 100),
+    [answeredCount, questions.length]
   );
 
   const handleSelectOption = async (choice) => {
@@ -98,7 +103,7 @@ export default function QuestionsCard({ questions, initialAnswers, draftNotice, 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/60 pb-4">
               <div className="flex items-center gap-3">
                 <span className={`rounded-full border px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${categoryInfo.badge}`}>
-                  Part {categoryInfo.part} of 3: {categoryInfo.name}
+                  Section {categoryInfo.part} of 3: {categoryInfo.name}
                 </span>
                 <span className="text-xs text-gray-400 font-medium">
                   (Question {categoryInfo.qInPart} of {categoryInfo.totalInPart} in this theme)

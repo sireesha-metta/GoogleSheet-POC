@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  PencilSquareIcon,
-  TrashIcon,
-  CheckIcon,
-  XMarkIcon,
-  UserIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  LockClosedIcon,
-  RocketLaunchIcon,
-} from "@heroicons/react/24/outline";
+import { PencilSquareIcon,TrashIcon,CheckIcon,XMarkIcon,UserIcon,EnvelopeIcon,PhoneIcon,LockClosedIcon,RocketLaunchIcon,} from "@heroicons/react/24/outline";
 import { deleteAdmin, getAdmins, updateAdmin } from "../services/Api";
 import { createAdminUser } from "../utils/auth";
 import { validators } from "../utils/validation";

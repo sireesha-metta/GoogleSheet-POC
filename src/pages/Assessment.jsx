@@ -476,7 +476,7 @@ export default function Assessment() {
               <div className="w-full max-w-3xl">
                 <p className="mb-3 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">LEAN IN COACHING</p>
                 <h1 className="text-3xl font-bold text-[#c8a85b]">Cancel Discussion Slot</h1>
-                <p className="mt-2 text-lg text-gray-400">Manage or cancel your scheduled discussion slot with Lorraine Burns.</p>
+                <p className="mt-2 text-lg text-gray-400">Manage or cancel your scheduled discussion slot with your coach.</p>
                 <div className="mt-6 rounded-2xl border border-[#cd3cd3] bg-[#262626] p-8">
                   <p className="text-gray-300 mb-6">Confirm cancellation for <span className="font-semibold text-[#c8a85b]">{profile.email}</span>?</p>
                   <button

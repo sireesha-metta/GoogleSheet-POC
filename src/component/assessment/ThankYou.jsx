@@ -44,7 +44,7 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
 
           <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
             {isCancelled ? "Your 20 mins discussion slot has been cancelled as requested."
-              : isReschedule ? "Your 20 mins discussion slot with Lorraine Burns has been updated."
+              : isReschedule ? "Your 20 mins discussion slot has been updated."
                 : isExisting ? "You have already completed the Leadership Reset Diagnostic."
                   : "Thank you for taking the Leadership Reset Diagnostic."}
           </p>
