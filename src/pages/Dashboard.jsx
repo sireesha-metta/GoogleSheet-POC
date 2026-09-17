@@ -23,6 +23,7 @@ function formatDate(raw) {
 
 export default function Dashboard() {
   const [submissions, setSubmissions] = useState([]);
+  const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(null);
@@ -57,6 +58,14 @@ export default function Dashboard() {
         setError("Could not reach the backend. Check your network or API server.");
         setLoading(false);
       });
+
+    // In-progress drafts (within 24h window)
+    authFetch("/api/admin/drafts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) setDrafts(data.drafts || []);
+      })
+      .catch(() => {});
   }, []);
 
   // Reset to page 1 when filters or sort changes
@@ -319,6 +328,44 @@ export default function Dashboard() {
       </div>
 
       <div className="px-6 pb-7 pt-5">
+        {/* In-progress drafts (auto-deleted after 24h) */}
+        {drafts.length > 0 && (
+          <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50">
+            <div className="border-b border-amber-200 px-4 py-3">
+              <h2 className="text-sm font-semibold text-amber-800">
+                In-Progress Assessments <span className="ml-1 rounded-full bg-amber-200 px-2 py-0.5 text-xs">{drafts.length}</span>
+              </h2>
+              <p className="text-xs text-amber-700">Saved drafts are automatically deleted 24 hours after the last activity.</p>
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase text-amber-700">
+                  <th className="px-4 py-2 font-semibold">Respondent</th>
+                  <th className="px-4 py-2 font-semibold">Email</th>
+                  <th className="px-4 py-2 font-semibold">Answered</th>
+                  <th className="px-4 py-2 font-semibold">Status</th>
+                  <th className="px-4 py-2 font-semibold">Last Active</th>
+                  <th className="px-4 py-2 font-semibold">Expires In</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drafts.map((d) => (
+                  <tr key={d.id} className="border-t border-amber-100">
+                    <td className="px-4 py-2 font-medium text-gray-800">{d.name || "—"}</td>
+                    <td className="px-4 py-2 text-gray-600">{d.email || "—"}</td>
+                    <td className="px-4 py-2 text-gray-600">{d.answeredCount}</td>
+                    <td className="px-4 py-2">
+                      <span className="inline-flex rounded-full bg-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{d.status}</span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-600">{formatDate(d.updatedAt)}</td>
+                    <td className="px-4 py-2 text-gray-600">{d.hoursRemaining != null ? `${d.hoursRemaining}h` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {loading && <p className="py-10 text-center text-sm text-[#666]">Loading submissions...</p>}
 
         {!loading && error && (

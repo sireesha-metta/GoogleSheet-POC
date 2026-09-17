@@ -418,7 +418,7 @@ export default function Assessment() {
 
     persistCompletedAssessment(completedEntry);
     setProfile((prev) => ({ ...prev, ...completedEntry, isReschedule }));
-    setCompletedAssessment(completedEntry);
+    setCompletedAssessment({ ...completedEntry, scoring: result?.scoring || null });
     setResponses(answers);
     setStep("thankyou");
     setSubmitting(false);

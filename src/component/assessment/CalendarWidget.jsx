@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, ExternalLink, CheckCircle, Loader2, User, Mail, Clock, AlertTriangle, X } from "lucide-react";
+import { Calendar as CalendarIcon, ExternalLink, CheckCircle, Loader2, X } from "lucide-react";
 
 export default function CalendarWidget({ profile, onConfirm, onBack, isSubmitting = false, submitError = "" }) {
   const CALENDAR_URL = import.meta.env.VITE_CALENDAR_URL || "https://calendar.google.com/calendar/appointments/schedules/AcZssZ2nhCtF_FHoxX0aAxYZKaN0_zgnhgx5zGgqkpQPp1at-6OLjCDMwR_z1mAKJ0uYbqVJzB8mS3HZ";
 
+  // Build an embeddable calendar URL with pre-filled user details.
+  // calendar.app.google short links ignore query params, so convert to the
+  // direct appointments/schedules URL which supports prefill + iframe embed.
   const getPreFilledCalendarUrl = (rawUrl) => {
-    const base = rawUrl || CALENDAR_URL;
-    let targetUrl = base;
+    let targetUrl = rawUrl || CALENDAR_URL;
 
     if (targetUrl.includes("calendar.app.google") && import.meta.env.VITE_CALENDAR_DIRECT_URL) {
       targetUrl = import.meta.env.VITE_CALENDAR_DIRECT_URL;
@@ -14,6 +16,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
 
     try {
       const u = new URL(targetUrl);
+      // gv=true renders the embeddable scheduling view
       u.searchParams.set("gv", "true");
       if (profile?.email) {
         u.searchParams.set("email", String(profile.email).trim());
@@ -40,14 +43,23 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
   const activeCalendarUrl = getPreFilledCalendarUrl(CALENDAR_URL);
   const [localSubmitting, setLocalSubmitting] = useState(false);
   const [hasOpenedCalendar, setHasOpenedCalendar] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const isLoading = isSubmitting || localSubmitting;
 
+  // Open the calendar as a full-width in-page modal (iframe embed)
   const handleOpenCalendar = () => {
     setHasOpenedCalendar(true);
-    window.open(activeCalendarUrl, "_blank", "noopener,noreferrer");
+    setShowCalendarModal(true);
+  };
+
+  // User finished picking a slot -> close popup and go straight to the
+  // submit confirmation dialog on the parent page (book -> close -> confirm -> submit)
+  const handleCloseCalendarModal = () => {
+    setShowCalendarModal(false);
+    setShowConfirmModal(true);
   };
 
   const handleConfirmClick = () => {
@@ -116,7 +128,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {hasOpenedCalendar ? "Calendar Opened in New Tab" : "Opens in New Tab with Pre-fill"}
+                  {hasOpenedCalendar ? "Calendar Opened" : "Opens Here with Pre-fill"}
                 </span>
               </div>
 
@@ -129,7 +141,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                     Book Exploration Call
                   </h2>
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    Schedule your 20-minute 1-on-1 session with Lorraine Burns on Google Calendar. Your contact details will auto-fill automatically in the new tab.
+                    Schedule your 20-minute 1-on-1 session with Lorraine Burns. Your name and email are pre-filled automatically.
                   </p>
                 </div>
               </div>
@@ -158,7 +170,7 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                 <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-3.5 text-xs text-emerald-200 flex items-center gap-2.5">
                   <CheckCircle size={18} className="text-emerald-400 shrink-0" />
                   <span>
-                    Google Calendar is open in your other browser tab. Once you select your date & time slot, return to this tab and click <strong>"Confirm & Complete Assessment"</strong> below!
+                    Once you select your date & time slot in the calendar popup, close it and click <strong>"Confirm & Complete Assessment"</strong> below!
                   </span>
                 </div>
               )}
@@ -169,8 +181,11 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
                 onClick={handleOpenCalendar}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a85b] px-6 py-4 text-base md:text-lg font-bold text-[#1c1c1c] shadow-xl transition hover:bg-[#d8b96b] text-center"
               >
-                {hasOpenedCalendar ? "Re-open Google Calendar ↗" : "Book Exploration Call on Google Calendar ↗"}
+                {hasOpenedCalendar ? "Re-open Booking Calendar" : "Book Exploration Call"}
               </button>
+              <p className="mt-2.5 text-center text-xs text-gray-400">
+                After booking, the confirmation step opens automatically.
+              </p>
               
             </div>
 
@@ -244,6 +259,44 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
           </div>
         </div>
       </div>
+
+      {/* FULL-WIDTH CALENDAR MODAL (iframe embed, auto-filled) */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
+          {/* Modal header */}
+          <div className="flex items-center justify-between bg-[#1c1c1c] px-5 py-3 border-b border-[#3a3a3a]">
+            <div className="flex items-center gap-3">
+              <CalendarIcon size={20} className="text-[#c8a85b]" />
+              <div>
+                <p className="text-sm font-bold text-white">Book your 20-minute Exploration Call</p>
+                <p className="text-xs text-gray-400">
+                  Booking as <span className="text-[#c8a85b] font-medium">{profile?.firstName || ""} {profile?.lastName || ""}</span>
+                  {profile?.email ? <> · <span className="text-[#c8a85b] font-medium">{profile.email}</span></> : null}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseCalendarModal}
+              className="inline-flex items-center gap-2 rounded-full bg-[#cd3cd3] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#b030b8]"
+            >
+              <X size={16} /> Done — Close
+            </button>
+          </div>
+
+          {/* Full-width iframe calendar */}
+          <div className="relative flex-1 bg-white">
+            <iframe
+              src={activeCalendarUrl}
+              title="Book Exploration Call"
+              className="absolute inset-0 h-full w-full border-0"
+              width="100%"
+              height="100%"
+              frameBorder="0"
+            />
+          </div>
+        </div>
+      )}
 
       {/* WARNING MODAL: IF CALENDAR WAS NOT OPENED */}
       {showWarningModal && (
