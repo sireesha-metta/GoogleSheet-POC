@@ -292,7 +292,6 @@ export default function Assessment() {
     const { responseMap, questionResponses, totalScore, totalWeightedScore, answeredCount } = buildAssessmentMetrics(answers);
 
     const payload = {
-      respondent: `${String(profile?.firstName || "").trim()} ${String(profile?.lastName || "").trim()}`.trim() || "Anonymous",
       savedAt: new Date().toISOString(),
       answeredCount,
       totalQuestions: questionItems.length,
