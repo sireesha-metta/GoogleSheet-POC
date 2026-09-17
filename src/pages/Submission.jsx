@@ -147,42 +147,45 @@ export default function Submission() {
   }, []);
 
   const summary = useMemo(() => {
-    const statusByRespondent = new Map();
-    const startedRespondents = new Set();
-    const draftedRespondents = new Set();
+    const statusByRespondentKey = new Map();
+    const startedRespondentKeys = new Set();
+    const draftedRespondentKeys = new Set();
 
     submissions.forEach((row) => {
-      const respondentKey = normalizeText(row?.respondent);
+      const respId = row?.respondentId || row?.respondent_id;
+      const respEmail = normalizeText(row?.email);
+      const respondentKey = respId ? `id_${respId}` : (respEmail ? `email_${respEmail}` : null);
       if (!respondentKey) return;
 
-      startedRespondents.add(respondentKey);
+      startedRespondentKeys.add(respondentKey);
 
       const nextStatus = classifySubmission(row);
-      const currentStatus = statusByRespondent.get(respondentKey);
+      const currentStatus = statusByRespondentKey.get(respondentKey);
 
       if (currentStatus === "submitted") return;
       if (nextStatus === "submitted") {
-        statusByRespondent.set(respondentKey, "submitted");
+        statusByRespondentKey.set(respondentKey, "submitted");
         return;
       }
       if (!currentStatus || currentStatus === "notStarted") {
-        statusByRespondent.set(respondentKey, nextStatus);
+        statusByRespondentKey.set(respondentKey, nextStatus);
       }
     });
 
     drafts.forEach((row) => {
-      const respondentKey = normalizeText(row?.respondent_name);
+      const respId = row?.respondent_id || row?.respondentId;
+      const respEmail = normalizeText(row?.email);
+      const respondentKey = respId ? `id_${respId}` : (respEmail ? `email_${respEmail}` : null);
       if (respondentKey) {
-        draftedRespondents.add(respondentKey);
+        draftedRespondentKeys.add(respondentKey);
       }
     });
 
-    const submitted = Array.from(statusByRespondent.values()).filter((status) => status === "submitted").length;
+    const submitted = Array.from(statusByRespondentKey.values()).filter((status) => status === "submitted").length;
     const drafted = drafts.length;
-    const respondentNames = respondents.map(getRespondentName).filter(Boolean).map(normalizeText);
-    const respondentCount = new Set(respondentNames).size;
-    const activeRespondents = new Set([...startedRespondents, ...draftedRespondents]);
-    const notStarted = Math.max(respondentCount - activeRespondents.size, 0);
+    const respondentCount = respondents.length;
+    const activeKeys = new Set([...startedRespondentKeys, ...draftedRespondentKeys]);
+    const notStarted = Math.max(respondentCount - activeKeys.size, 0);
 
     return {
       submitted,
@@ -190,26 +193,34 @@ export default function Submission() {
       notStarted,
       total: submitted + drafted + notStarted,
       respondentCount,
-      startedCount: startedRespondents.size,
+      startedCount: startedRespondentKeys.size,
     };
   }, [respondents, submissions, drafts]);
 
   const notStartedRespondents = useMemo(() => {
-    const completedSet = new Set(
-      submissions.map((item) => normalizeText(item.respondent))
-    );
+    const startedKeys = new Set();
 
-    const draftedSet = new Set(
-      drafts.map((item) => normalizeText(item.respondent_name))
-    );
+    submissions.forEach((row) => {
+      const respId = row?.respondentId || row?.respondent_id;
+      const respEmail = normalizeText(row?.email);
+      if (respId) startedKeys.add(`id_${respId}`);
+      if (respEmail) startedKeys.add(`email_${respEmail}`);
+    });
+
+    drafts.forEach((row) => {
+      const respId = row?.respondent_id || row?.respondentId;
+      const respEmail = normalizeText(row?.email);
+      if (respId) startedKeys.add(`id_${respId}`);
+      if (respEmail) startedKeys.add(`email_${respEmail}`);
+    });
 
     return respondents.filter((respondent) => {
-      const name = normalizeText(getRespondentName(respondent));
+      const idKey = respondent?.id ? `id_${respondent.id}` : null;
+      const emailKey = respondent?.email ? `email_${normalizeText(respondent.email)}` : null;
 
-      return (
-        !completedSet.has(name) &&
-        !draftedSet.has(name)
-      );
+      if (idKey && startedKeys.has(idKey)) return false;
+      if (emailKey && startedKeys.has(emailKey)) return false;
+      return true;
     });
   }, [respondents, submissions, drafts]);
 

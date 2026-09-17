@@ -167,7 +167,7 @@ export default function UserDetails({ initialData, continueSaving, continueError
       <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
         <div className="w-full max-w-4xl">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">LEAN IN COACHING </p>
-          <h1 className="text-3xl font-bold leading-tight text-[#c8a85b] md:text-3xl">Tell us about yourself </h1>
+          <h1 className="text-3xl font-bold leading-tight text-[#c8a85b] md:text-3xl">Tell us about yourself</h1>
           <p className="mt-2 max-w-3xl text-md leading-8 text-gray-400">
             Please provide your basic information before beginning the
             Leadership Reset Diagnostic. Your assessment results will be
@@ -189,7 +189,7 @@ export default function UserDetails({ initialData, continueSaving, continueError
               <button type="button" onClick={onBack} className="rounded-full border border-[#cd3cd3] bg-transparent px-8 py-4 font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10">Back</button>
 
               <button type="button" onClick={validate} disabled={continueSaving} className="rounded-full border border-[#cd3cd3] bg-[#c8a85b] px-8 py-4 font-semibold text-[#1c1c1c] transition hover:opacity-90"      >
-                {continueSaving ? "Saving..." : "Begin Assessment"}
+                {continueSaving ? "Saving..." : "Select assessment"}
               </button>
             </div>
           </div>

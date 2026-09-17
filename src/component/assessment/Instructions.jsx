@@ -45,7 +45,7 @@ export default function Instructions({ onBack, onBegin }) {
             <div className="mt-10 flex justify-between">
               <button  type="button"  onClick={onBack}  className="rounded-full border border-[#cd3cd3] bg-transparent px-8 py-4 font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10"  >   Previous   </button>
 
-              <button  type="button" onClick={onBegin}   className="rounded-full border border-[#cd3cd3] bg-[#c8a85b] px-8 py-4 font-semibold text-[#1c1c1c] transition hover:opacity-90"   >  Begin Assessment
+              <button  type="button" onClick={onBegin}   className="rounded-full border border-[#cd3cd3] bg-[#c8a85b] px-8 py-4 font-semibold text-[#1c1c1c] transition hover:opacity-90"   >  Begin assessment
               </button>
             </div>
           </div>

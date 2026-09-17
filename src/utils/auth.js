@@ -409,6 +409,7 @@ export async function submitPublicAssessment(payload) {
       success: true,
       alreadySubmitted: Boolean(data?.alreadySubmitted),
       mailSent: Boolean(data?.mailSent),
+      scoring: data?.scoring || null,
       message: data?.message || "Assessment saved.",
     };
   } catch (error) {

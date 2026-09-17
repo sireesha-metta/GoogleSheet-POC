@@ -1,325 +1,90 @@
-import { useState, useMemo, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
-import { API_BASE_URL } from "../../utils/auth";
-
-function formatTime12h(timeStr, shiftTypeHint = "") {
-  if (!timeStr) return "";
-  const parts = timeStr.trim().split(":");
-  let h = parseInt(parts[0], 10) || 0;
-  const m = parseInt(parts[1], 10) || 0;
-  const hint = (shiftTypeHint || "").toLowerCase();
-  if ((hint.includes("afternoon") || hint.includes("evening")) && h < 12) {
-    h += 12;
-  }
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  const hh = String(h).padStart(2, "0");
-  const mm = String(m).padStart(2, "0");
-  return `${hh}:${mm} ${ampm}`;
-}
+import { useState } from "react";
+import { Calendar as CalendarIcon, ExternalLink, CheckCircle, Loader2, X } from "lucide-react";
 
 export default function CalendarWidget({ profile, onConfirm, onBack, isSubmitting = false, submitError = "" }) {
+  const CALENDAR_URL = import.meta.env.VITE_CALENDAR_URL || "https://calendar.google.com/calendar/appointments/schedules/AcZssZ2nhCtF_FHoxX0aAxYZKaN0_zgnhgx5zGgqkpQPp1at-6OLjCDMwR_z1mAKJ0uYbqVJzB8mS3HZ";
+
+  // Build an embeddable calendar URL with pre-filled user details.
+  // calendar.app.google short links ignore query params, so convert to the
+  // direct appointments/schedules URL which supports prefill + iframe embed.
+  const getPreFilledCalendarUrl = (rawUrl) => {
+    let targetUrl = rawUrl || CALENDAR_URL;
+
+    if (targetUrl.includes("calendar.app.google") && import.meta.env.VITE_CALENDAR_DIRECT_URL) {
+      targetUrl = import.meta.env.VITE_CALENDAR_DIRECT_URL;
+    }
+
+    try {
+      const u = new URL(targetUrl);
+      // gv=true renders the embeddable scheduling view
+      u.searchParams.set("gv", "true");
+      if (profile?.email) {
+        u.searchParams.set("email", String(profile.email).trim());
+        u.searchParams.set("guest_email", String(profile.email).trim());
+      }
+      if (profile?.firstName) {
+        u.searchParams.set("first_name", String(profile.firstName).trim());
+        u.searchParams.set("fname", String(profile.firstName).trim());
+      }
+      if (profile?.lastName) {
+        u.searchParams.set("last_name", String(profile.lastName).trim());
+        u.searchParams.set("lname", String(profile.lastName).trim());
+      }
+      const fullName = `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim();
+      if (fullName) {
+        u.searchParams.set("name", fullName);
+      }
+      return u.toString();
+    } catch {
+      return targetUrl;
+    }
+  };
+
+  const activeCalendarUrl = getPreFilledCalendarUrl(CALENDAR_URL);
   const [localSubmitting, setLocalSubmitting] = useState(false);
+  const [hasOpenedCalendar, setHasOpenedCalendar] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const isLoading = isSubmitting || localSubmitting;
 
-  useEffect(() => {
-    if (submitError) {
-      setLocalSubmitting(false);
-    }
-  }, [submitError]);
-  const today = useMemo(() => new Date(), []);
-
-  const minMonth = useMemo(() => new Date(today.getFullYear(), today.getMonth(), 1), [today]);
-  const maxMonth = useMemo(() => new Date(today.getFullYear(), today.getMonth() + 3, 1), [today]);
-
-  const [currentMonthDate, setCurrentMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const target = new Date(today);
-    target.setDate(target.getDate() + 1);
-    while (target.getDay() === 0 || target.getDay() === 6) {
-      target.setDate(target.getDate() + 1);
-    }
-    return target;
-  });
-  const [selectedTime, setSelectedTime] = useState("");
-  const [selectedTimeZone, setSelectedTimeZone] = useState("India,Asia/Kolkata");
-  const [selectedShift, setSelectedShift] = useState("MORNING");
-  const [viewMode, setViewMode] = useState("calendar");
-
-  const isTodaySelected = useMemo(() => {
-    if (!selectedDate) return false;
-    const now = new Date();
-    return (
-      selectedDate.getFullYear() === now.getFullYear() &&
-      selectedDate.getMonth() === now.getMonth() &&
-      selectedDate.getDate() === now.getDate()
-    );
-  }, [selectedDate]);
-
-  const currentMinutesToday = useMemo(() => {
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
-  }, []);
-
-  const [slotData, setSlotData] = useState({
-    slots: [],
-    allConfiguredSlots: [],
-    bookedSlots: [],
-    blockedSlots: [],
-    shifts: [],
-    loadingSlots: true,
-  });
-
-  const filteredSlots = useMemo(() => {
-    const baseSlots = slotData.allConfiguredSlots || [];
-    if (selectedShift === "ALL") return baseSlots;
-
-    const parseToMins = (str, shiftTypeHint = "") => {
-      if (!str) return -1;
-      const lower = str.toLowerCase().trim();
-      const isPm = lower.includes("pm");
-      const isAm = lower.includes("am");
-      const cleaned = lower.replace(/(am|pm)/g, "").trim();
-      const parts = cleaned.split(":");
-      let hours = parseInt(parts[0], 10) || 0;
-      const mins = parseInt(parts[1], 10) || 0;
-      if (isPm && hours < 12) hours += 12;
-      if (isAm && hours === 12) hours = 0;
-      const hint = (shiftTypeHint || "").toLowerCase();
-      if (!isAm && !isPm && (hint.includes("afternoon") || hint.includes("evening")) && hours < 12) {
-        hours += 12;
-      }
-      return hours * 60 + mins;
-    };
-
-    // Find shift in database configurations
-    const matchedShift = (slotData.shifts || []).find((s) => {
-      if (selectedShift === "MORNING" && s.shift_type.toLowerCase().includes("morning")) return true;
-      if (selectedShift === "AFTERNOON" && s.shift_type.toLowerCase().includes("afternoon")) return true;
-      if (selectedShift === "EVENING" && s.shift_type.toLowerCase().includes("evening")) return true;
-      return s.shift_type === selectedShift;
-    });
-
-    if (matchedShift && matchedShift.start_time && matchedShift.end_time) {
-      const shiftHint = matchedShift.shift_type;
-      const startMins = parseToMins(matchedShift.start_time, shiftHint);
-      const endMins = parseToMins(matchedShift.end_time, shiftHint);
-
-      if (startMins >= 0 && endMins > startMins) {
-        return baseSlots.filter((slot) => {
-          const slotMins = parseToMins(slot);
-          return slotMins >= startMins && slotMins < endMins;
-        });
-      }
-    }
-
-    return baseSlots.filter((slot) => {
-      const lower = slot.toLowerCase();
-      const isAm = lower.includes("am");
-      const isPm = lower.includes("pm");
-      const hour = parseInt(lower, 10);
-
-      if (selectedShift === "MORNING") {
-        if (isAm && (hour >= 8 && hour <= 11)) return true;
-        if (isPm && hour === 12) return true;
-        return false;
-      }
-      if (selectedShift === "AFTERNOON") {
-        if (isPm && (hour >= 1 && hour <= 5)) return true;
-        return false;
-      }
-      if (selectedShift === "EVENING") {
-        if (isPm && (hour >= 6 && hour <= 11)) return true;
-        return false;
-      }
-      return true;
-    });
-  }, [slotData.allConfiguredSlots, slotData.shifts, selectedShift]);
-
-  useEffect(() => {
-    setSelectedTime("");
-  }, [selectedShift, selectedDate]);
-
-  const monthYearLabel = useMemo(() => {
-    return currentMonthDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  }, [currentMonthDate]);
-
-  const isPrevMonthDisabled = useMemo(() => {
-    return (
-      currentMonthDate.getFullYear() < minMonth.getFullYear() ||
-      (currentMonthDate.getFullYear() === minMonth.getFullYear() &&
-        currentMonthDate.getMonth() <= minMonth.getMonth())
-    );
-  }, [currentMonthDate, minMonth]);
-
-  const isNextMonthDisabled = useMemo(() => {
-    return (
-      currentMonthDate.getFullYear() > maxMonth.getFullYear() ||
-      (currentMonthDate.getFullYear() === maxMonth.getFullYear() &&
-        currentMonthDate.getMonth() >= maxMonth.getMonth())
-    );
-  }, [currentMonthDate, maxMonth]);
-
-  const handlePrevMonth = () => {
-    if (!isPrevMonthDisabled) {
-      setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-    }
+  // Open the calendar as a full-width in-page modal (iframe embed)
+  const handleOpenCalendar = () => {
+    setHasOpenedCalendar(true);
+    setShowCalendarModal(true);
   };
 
-  const handleNextMonth = () => {
-    if (!isNextMonthDisabled) {
-      setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-    }
+  // User finished picking a slot -> close popup and go straight to the
+  // submit confirmation dialog on the parent page (book -> close -> confirm -> submit)
+  const handleCloseCalendarModal = () => {
+    setShowCalendarModal(false);
+    setShowConfirmModal(true);
   };
 
-  const calendarDays = useMemo(() => {
-    const year = currentMonthDate.getFullYear();
-    const month = currentMonthDate.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const days = [];
-
-    for (let i = 0; i < firstDayIndex; i++) {
-      days.push({ key: `blank-${i}`, isBlank: true });
-    }
-
-    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-      const dateObj = new Date(year, month, dayNum);
-
-      const checkDate = new Date(year, month, dayNum);
-      checkDate.setHours(0, 0, 0, 0);
-
-      const todayDate = new Date(today);
-      todayDate.setHours(0, 0, 0, 0);
-
-      const isPast = checkDate < todayDate;
-
-      const maxAllowedDate = new Date(today);
-      maxAllowedDate.setMonth(maxAllowedDate.getMonth() + 3);
-      maxAllowedDate.setHours(23, 59, 59, 999);
-      const isBeyondLimit = checkDate > maxAllowedDate;
-
-      const dayOfWeek = checkDate.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-      const isDisabled = isPast || isBeyondLimit || isWeekend;
-      const isSelected =
-        selectedDate &&
-        selectedDate.getFullYear() === year &&
-        selectedDate.getMonth() === month &&
-        selectedDate.getDate() === dayNum;
-
-      const isToday =
-        today.getFullYear() === year &&
-        today.getMonth() === month &&
-        today.getDate() === dayNum;
-
-      days.push({ key: `day-${dayNum}`, dayNum, dateObj, isDisabled, isSelected, isToday, });
-    }
-
-    return days;
-  }, [currentMonthDate, selectedDate, today]);
-
-  const formattedSelectedDate = useMemo(() => {
-    if (!selectedDate) return "";
-    return selectedDate.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  }, [selectedDate]);
-
-  useEffect(() => {
-    if (!formattedSelectedDate) return;
-    let active = true;
-    const fetchSlots = async () => {
-      setSlotData((prev) => ({ ...prev, loadingSlots: true }));
-      try {
-        let res;
-        try {
-          res = await fetch(`${API_BASE_URL}/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
-          const contentType = res.headers.get("content-type") || "";
-          if (!res.ok || !contentType.includes("application/json")) {
-            throw new Error("API_BASE_URL fetch non-json");
-          }
-        } catch (e) {
-          try {
-            res = await fetch(`/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
-            const contentType = res.headers.get("content-type") || "";
-            if (!res.ok || !contentType.includes("application/json")) {
-              throw new Error("Relative fetch non-json");
-            }
-          } catch (err) {
-            res = await fetch(`http://localhost:5000/api/available-slots?date=${encodeURIComponent(formattedSelectedDate)}`);
-          }
-        }
-        const json = await res.json();
-        if (active && json.success) {
-          const avail = json.slots || [];
-          const allConf = json.allConfiguredSlots || [];
-          const booked = json.bookedSlots || [];
-          const blocked = json.blockedSlots || [];
-
-          setSlotData({
-            slots: avail,
-            allConfiguredSlots: allConf,
-            bookedSlots: booked,
-            blockedSlots: blocked,
-            shifts: json.shifts || [],
-            loadingSlots: false,
-          });
-        }
-      } catch (e) {
-        if (active) setSlotData((prev) => ({ ...prev, loadingSlots: false }));
-      }
-    };
-    fetchSlots();
-    return () => { active = false; };
-  }, [formattedSelectedDate]);
-
-  const calendlyMonthParam = useMemo(() => {
-    if (!selectedDate) return "2026-09";
-    const yyyy = selectedDate.getFullYear();
-    const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    return `${yyyy}-${mm}`;
-  }, [selectedDate]);
-
-  const fullName = `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim() || "Participant";
-  const userEmail = profile?.email || "";
-
-  const calendlyUrl = `https://calendly.com/leanin-coaching/30min?month=${calendlyMonthParam}&background_color=1C1C1C&text_color=E7D9CB&primary_color=C8A85B&name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(userEmail)}`;
-
-  useEffect(() => {
-    const handleMessage = (e) => {
-      if (e.data && e.data.event === "calendly.event_scheduled") {
-        console.log("Calendly event scheduled:", e.data);
-      }
-    };
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  const handleConfirmSubmission = () => {
+  const handleConfirmClick = () => {
     if (isLoading) return;
-    if (!selectedTime) {
-      alert("Please select an available discussion time slot before submitting.");
-      return;
+    if (!hasOpenedCalendar) {
+      setShowWarningModal(true);
+    } else {
+      setShowConfirmModal(true);
     }
+  };
+
+  const executeFinalSubmission = () => {
+    setShowWarningModal(false);
+    setShowConfirmModal(false);
     setLocalSubmitting(true);
 
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://leadership-assesments-sigma.vercel.app";
-    const emailParam = encodeURIComponent(profile?.email || "");
-
     const bookingDetails = {
-      scheduledDate: formattedSelectedDate,
-      scheduledTime: selectedTime,
-      timeZone: selectedTimeZone,
-      calendarUrl: `${origin}/assessment?step=calendar&email=${emailParam}`,
-      rescheduleUrl: `${origin}/assessment?step=calendar&email=${emailParam}&action=reschedule`,
-      cancelUrl: `${origin}/assessment?step=calendar&email=${emailParam}&action=cancel`,
-      isReschedule: Boolean(profile?.isReschedule),
+      calendarUrl: activeCalendarUrl,
+      bookedVia: "Google Calendar",
+      scheduledDate: new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
     };
 
     onConfirm(bookingDetails);
@@ -329,239 +94,316 @@ export default function CalendarWidget({ profile, onConfirm, onBack, isSubmittin
 
   return (
     <section className="min-h-screen bg-[#1c1c1c] text-[#c8a85b]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }}>
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-8">
-        <div className="w-full max-w-4xl mx-auto">
+      <div className="mx-auto flex min-h-screen max-w-4xl items-center px-4 py-10">
+        <div className="w-full">
+          {/* Header */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 text-center md:text-left">
+            <div>
+              <p className="mb-1 text-xs md:text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
+                LEAN IN COACHING
+              </p>
+              <h1 className="text-2xl md:text-3xl font-bold leading-tight text-[#c8a85b]">
+                {isRescheduleMode ? "Reschedule Exploration Call" : "Book Exploration Call & Finalize"}
+              </h1>
+              <p className="mt-1 text-sm text-gray-300">
+                Complete your 20-minute booking on Google Calendar and receive your diagnostic report.
+              </p>
+            </div>
 
-          <div className="mb-6">
-            <p className="mb-2 text-xs md:text-sm font-semibold uppercase tracking-[6px] text-[#cd3cd3]">
-              LEAN IN COACHING
-            </p>
-            <h1 className="text-2xl md:text-4xl font-bold leading-tight text-[#c8a85b]">
-              {isRescheduleMode ? "Reschedule Your Discussion Slot" : "Schedule Discussion & Complete Assessment"}
-            </h1>
-            <p className="mt-2 text-base text-gray-400">
-              Select your preferred date & time slot for your 20 mins Discussion with Lorraine Burns.
-            </p>
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-full border border-[#c8a85b]/40 px-5 py-2 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#c8a85b]/10"
+            >
+              ← Back
+            </button>
           </div>
 
-          <div className="rounded-2xl border border-[#cd3cd3] bg-[#262626] p-6 md:p-8 shadow-2xl">
-            {viewMode === "calendar" ? (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-
-                <div className="md:col-span-7 border-b md:border-b-0 md:border-r border-[#3a3a3a] pb-6 md:pb-0 md:pr-6">
-
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-[#c8a85b]">{monthYearLabel}</h2>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={handlePrevMonth} disabled={isPrevMonthDisabled}
-                        title="Previous month (previous months disabled)"
-                        className="rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2 text-[#c8a85b] hover:bg-[#313131] disabled:opacity-30 disabled:cursor-not-allowed transition" >
-                        <ChevronLeft size={18} />
-                      </button>
-                      <span className="text-xs text-gray-400 font-mono">Up to 3 months</span>
-                      <button type="button" onClick={handleNextMonth} disabled={isNextMonthDisabled}
-                        title="Next month (max 3 months ahead)" className="rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2 text-[#c8a85b] hover:bg-[#313131] disabled:opacity-30 disabled:cursor-not-allowed transition">
-                        <ChevronRight size={18} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 text-center font-semibold text-xs text-gray-400 mb-2">
-                    <span>Sun</span>
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1.5 text-center">
-                    {calendarDays.map((cell) => {
-                      if (cell.isBlank) {
-                        return <div key={cell.key} className="h-10 w-full" />;
-                      }
-
-                      return (
-                        <button key={cell.key} type="button" disabled={cell.isDisabled} onClick={() => setSelectedDate(cell.dateObj)} className={`h-10 w-full rounded-xl text-sm font-medium transition-all flex items-center justify-center ${cell.isSelected ? "bg-[#c8a85b] text-[#1c1c1c] font-bold shadow-lg scale-105"
-                          : cell.isDisabled ? "text-gray-600 bg-[#1a1a1a]/50 cursor-not-allowed line-through opacity-40"
-                            : "bg-[#1f1f1f] text-[#E7D9CB] border border-[#3a3a3a] hover:border-[#c8a85b] hover:bg-[#313131]"
-                          }`} >
-                          {cell.dayNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="space-y-3 pt-4 m-4">
-                    <button type="button" onClick={onBack} className="rounded-full border border-[#cd3cd3] px-6 py-2.5 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#cd3cd3]/10">
-                      Back to Questions
-                    </button>
-                  </div>
-                </div>
-
-                <div className="md:col-span-5 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-[#c8a85b] mb-1"> Selected Date  </h3>
-                    <p className="text-sm font-semibold text-white mb-4 bg-[#1f1f1f] border border-[#3a3a3a] rounded-lg p-2.5 flex items-center gap-2">
-                      <CalendarIcon size={16} className="text-[#c8a85b]" />
-                      {formattedSelectedDate}
-                    </p>
-
-                    <div className="mb-4">
-                      <label className="block text-xs font-semibold text-gray-400 mb-1">Shift Type</label>
-                      <select value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)}
-                        className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2.5 text-xs text-[#E7D9CB] focus:border-[#c8a85b] outline-none" >
-                        {slotData.loadingSlots || !slotData.shifts || slotData.shifts.length === 0 ? (
-                          <option value="MORNING">Loading shift configurations...</option>
-                        ) : (
-                          slotData.shifts.map((s) => {
-                            const rawName = s.shift_type.split("(")[0].trim();
-                            const timeLabel = (s.start_time && s.end_time) ? `${formatTime12h(s.start_time, s.shift_type)} - ${formatTime12h(s.end_time, s.shift_type)}` : "";
-                            const displayLabel = timeLabel ? `${rawName} (${timeLabel})` : s.shift_type;
-                            const valueKey = rawName.toUpperCase().includes("MORNING") ? "MORNING" : rawName.toUpperCase().includes("AFTERNOON") ? "AFTERNOON" : rawName.toUpperCase().includes("EVENING") ? "EVENING" : s.shift_type;
-
-                            return (
-                              <option key={s.id || s.shift_type} value={valueKey}>
-                                {displayLabel}
-                              </option>
-                            );
-                          })
-                        )}
-                        <option value="ALL">All Shifts</option>
-                      </select>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-[#c8a85b] mb-2 flex items-center gap-2">
-                      <Clock size={18} /> Select Discussion Time
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      {slotData.loadingSlots ? (
-                        <div className="col-span-2 flex items-center justify-center py-8 text-[#c8a85b] gap-2 text-xs font-semibold">
-                          <Loader2 className="animate-spin" size={18} /> Loading available time slots...
-                        </div>
-                      ) : filteredSlots.length === 0 ? (
-                        <div className="col-span-2 py-6 text-center text-xs text-gray-400">
-                          No time slots available for this shift.
-                        </div>
-                      ) : (
-                        filteredSlots.map((slot) => {
-                          const parseSlotMins = (str) => {
-                            if (!str) return -1;
-                            const lower = str.toLowerCase().trim();
-                            const isPm = lower.includes("pm");
-                            const isAm = lower.includes("am");
-                            const cleaned = lower.replace(/(am|pm)/g, "").trim();
-                            const parts = cleaned.split(":");
-                            let hours = parseInt(parts[0], 10) || 0;
-                            const mins = parseInt(parts[1], 10) || 0;
-                            if (isPm && hours < 12) hours += 12;
-                            if (isAm && hours === 12) hours = 0;
-                            return hours * 60 + mins;
-                          };
-
-                          const isBooked = slotData.bookedSlots.includes(slot);
-                          const isBlocked = slotData.blockedSlots.includes(slot);
-                          const isPastSlotToday = isTodaySelected && parseSlotMins(slot) <= currentMinutesToday;
-                          const isDisabled = isBooked || isBlocked || isPastSlotToday;
-
-                          return (
-                            <button
-                              key={slot}
-                              type="button"
-                              disabled={isDisabled}
-                              onClick={() => setSelectedTime(slot)}
-                              className={`rounded-lg py-2 px-3 text-xs md:text-sm font-semibold transition border flex flex-col items-center justify-center ${
-                                selectedTime === slot
-                                  ? "bg-[#c8a85b] text-[#1c1c1c] border-[#c8a85b]"
-                                  : isDisabled
-                                  ? "bg-[#1a1a1a]/50 text-gray-600 border-[#3a3a3a] cursor-not-allowed opacity-40 line-through"
-                                  : "bg-[#1f1f1f] text-[#E7D9CB] border-[#3a3a3a] hover:border-[#c8a85b]"
-                              }`}
-                            >
-                              <span>{slot}</span>
-                              {isBooked ? (
-                                <span className="text-[10px] text-red-400 no-underline font-normal">Booked</span>
-                              ) : isBlocked ? (
-                                <span className="text-[10px] text-yellow-500 no-underline font-normal">Unavailable</span>
-                              ) : isPastSlotToday ? (
-                                <span className="text-[10px] text-gray-500 no-underline font-normal">Passed</span>
-                              ) : null}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    <div className="mb-6">
-                      <label className="block text-xs font-semibold text-gray-400 mb-1">Time Zone </label>
-                      <select value={selectedTimeZone} onChange={(e) => setSelectedTimeZone(e.target.value)}
-                        className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] p-2.5 text-xs text-[#E7D9CB] focus:border-[#c8a85b] outline-none" >
-                        <option value="India, Sri Lanka Time">India, Asia/Kolkata (IST, GMT+5:30)</option>
-                        <option value="London, UK (BST, GMT+1)">London, UK (BST, GMT+1)</option>
-                        <option value="Eastern Time (US & Canada)">Eastern Time (US & Canada)</option>
-                        <option value="Pacific Time (US & Canada)">Pacific Time (US & Canada)</option>
-                        <option value="Singapore Time (SGT)">Singapore Time (SGT, GMT+8)</option>
-                      </select>
-                    </div>
-
-                    {/* <div className="rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4 text-xs text-gray-300 space-y-1 mb-6">
-                      <p className="font-bold text-[#c8a85b] text-sm mb-1">Appointment Summary:</p>
-                      <p>• <strong>Topic:</strong> 20 mins Discussion with Lorraine Burns</p>
-                      <p>• <strong>Participant:</strong> {fullName} ({userEmail || "No email provided"})</p>
-                      <p>• <strong>Schedule:</strong> {selectedTime} ({selectedTimeZone}) on {formattedSelectedDate}</p>
-                    </div> */}
-                  </div>
-
-                  {submitError && (
-                    <div className="mb-4 rounded-xl border border-red-500/50 bg-red-900/30 p-3 text-xs text-red-200">
-                      {submitError}
-                    </div>
-                  )}
-
-                  <div className="space-y-3 pt-4 border-t border-[#3a3a3a]">
-                    <button type="button" onClick={handleConfirmSubmission} disabled={isLoading}
-                      className="w-full rounded-full bg-[#c8a85b] py-3.5 px-6 font-bold text-[#1c1c1c] transition hover:bg-[#d8b96b] shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" >
-                      {isLoading ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" /> Submitting Assessment...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={18} /> {isRescheduleMode ? "Confirm Reschedule" : "Confirm & Submit Assessment"}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
+          <div className="rounded-2xl border border-[#cd3cd3] bg-[#262626] p-6 md:p-10 shadow-2xl space-y-8">
+            {/* STEP 1: BOOK EXPLORATION CALL */}
+            <div className={`rounded-xl border p-6 md:p-8 shadow-lg transition-all ${hasOpenedCalendar ? "border-emerald-500/50 bg-[#1c2820]" : "border-[#c8a85b]/30 bg-[#1f1f1f]"}`}>
+              <div className="flex items-center justify-between mb-4">
+                <span className={`rounded-full px-3.5 py-1 text-xs font-bold tracking-wide uppercase ${hasOpenedCalendar ? "bg-emerald-500 text-black" : "bg-[#c8a85b] text-[#1c1c1c]"}`}>
+                  {hasOpenedCalendar ? "✓ Step 1 Complete" : "Step 1 · Exploration Call"}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {hasOpenedCalendar ? "Calendar Opened" : "Opens Here with Pre-fill"}
+                </span>
               </div>
-            ) : (
-              <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="text-sm text-gray-300">
-                    Showing Calendly page for <strong>{monthYearLabel}</strong>
+
+              <div className="flex items-start gap-4 mb-6">
+                <div className={`rounded-2xl p-3.5 shrink-0 ${hasOpenedCalendar ? "bg-emerald-500/20 text-emerald-400" : "bg-[#c8a85b]/20 text-[#c8a85b]"}`}>
+                  <CalendarIcon size={32} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-1">
+                    Book Exploration Call
+                  </h2>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    Schedule your 20-minute 1-on-1 session with Lorraine Burns. Your name and email are pre-filled automatically.
                   </p>
-                  <button type="button" onClick={handleConfirmSubmission} disabled={isLoading} className="rounded-full bg-[#c8a85b] px-5 py-2 text-xs font-bold text-[#1c1c1c] transition hover:bg-[#d8b96b] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"  >
-                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Submitting...</> : "Done & Submit Assessment →"}
-                  </button>
-                </div>
-                <div className="w-full rounded-xl overflow-hidden border border-[#3a3a3a] bg-[#1c1c1c]">
-                  <iframe src={calendlyUrl} width="100%" height="650" frameBorder="0" title="Calendly Scheduling Page"
-                    className="w-full" />
-                </div>
-                <div className="mt-4 flex justify-between">
-
-                  <button type="button" onClick={handleConfirmSubmission} disabled={isLoading} className="rounded-full bg-[#c8a85b] px-6 py-2.5 text-sm font-bold text-[#1c1c1c] transition hover:bg-[#d8b96b] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
-                    {isLoading ? <><Loader2 size={16} className="animate-spin" /> Submitting Assessment...</> : "Confirm & Complete Assessment"}
-                  </button>
                 </div>
               </div>
-            )}
+
+              {/* Participant Details Summary */}
+              {/* <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3 bg-[#181818] p-4 rounded-xl border border-[#333] text-xs">
+                <div className="flex items-center gap-2">
+                  <User size={15} className="text-[#c8a85b] shrink-0" />
+                  <span className="text-gray-400">Name:</span>
+                  <span className="font-semibold text-white truncate">{profile?.firstName || ""} {profile?.lastName || ""}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail size={15} className="text-[#c8a85b] shrink-0" />
+                  <span className="text-gray-400">Email:</span>
+                  <span className="font-semibold text-white truncate">{profile?.email || "—"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock size={15} className="text-[#c8a85b] shrink-0" />
+                  <span className="text-gray-400">Duration:</span>
+                  <span className="font-semibold text-white">20 Mins (Google Meet)</span>
+                </div>
+              </div> */}
+
+              {/* Opened Calendar Banner Notice */}
+              {hasOpenedCalendar && (
+                <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-3.5 text-xs text-emerald-200 flex items-center gap-2.5">
+                  <CheckCircle size={18} className="text-emerald-400 shrink-0" />
+                  <span>
+                    Once you select your date & time slot in the calendar popup, close it and click <strong>"Confirm & Complete Assessment"</strong> below!
+                  </span>
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleOpenCalendar}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a85b] px-6 py-4 text-base md:text-lg font-bold text-[#1c1c1c] shadow-xl transition hover:bg-[#d8b96b] text-center"
+              >
+                {hasOpenedCalendar ? "Re-open Booking Calendar" : "Book Exploration Call"}
+              </button>
+              <p className="mt-2.5 text-center text-xs text-gray-400">
+                After booking, the confirmation step opens automatically.
+              </p>
+              
+            </div>
+
+            {/* STEP 2: COMPLETE ASSESSMENT */}
+            <div className={`rounded-xl border p-6 md:p-8 shadow-lg transition-all ${hasOpenedCalendar ? "border-[#cd3cd3] bg-[#221c24] ring-2 ring-[#cd3cd3]/30" : "border-[#cd3cd3]/30 bg-[#1f1f1f]"}`}>
+              <div className="flex items-center justify-between mb-4">
+                <span className="rounded-full bg-[#cd3cd3] px-3.5 py-1 text-xs font-bold text-white tracking-wide uppercase">
+                  Step 2 · Deliver Report
+                </span>
+                {/* <span className="text-xs text-gray-400 font-medium">
+                  Instant PDF Delivery
+                </span> */}
+              </div>
+
+              <div className="flex items-start gap-4 mb-6">
+                <div className="rounded-2xl bg-[#cd3cd3]/20 p-3.5 text-[#cd3cd3] shrink-0">
+                  <CheckCircle size={32} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-1">
+                    Finalize & Complete Assessment
+                  </h2>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    Once you have booked your appointment slot on Google Calendar, click below to securely record your diagnostic answers and receive your personalized PDF report by email.
+                  </p>
+                </div>
+              </div>
+
+              {submitError && (
+                <div className="mb-4 rounded-xl border border-red-500/50 bg-red-900/30 p-4 text-sm text-red-200">
+                  {submitError}
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleConfirmClick}
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#cd3cd3] px-6 py-4 text-base md:text-lg font-bold text-white shadow-xl transition hover:bg-[#b030b8] disabled:opacity-60 disabled:cursor-not-allowed text-center"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" /> Submitting Assessment...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={20} /> Confirm & Complete Assessment
+                  </>
+                )}
+              </button>
+              <p className="mt-2.5 text-center text-xs text-gray-400">
+                Saves diagnostic responses & sends your personalized PDF report to <span className="text-white font-medium">{profile?.email || "your email"}</span>.
+              </p>
+            </div>
+
+            {/* Navigation Footer */}
+            <div className="pt-4 border-t border-[#3a3a3a] flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onBack}
+                className="rounded-full border border-[#c8a85b]/40 px-6 py-2.5 text-sm font-semibold text-[#c8a85b] transition hover:bg-[#c8a85b]/10"
+              >
+                ← Back to Questions
+              </button>
+
+              <span className="text-xs text-gray-400">
+                Lean In Coaching · Leadership Reset Assessment
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* FULL-WIDTH CALENDAR MODAL (iframe embed, auto-filled) */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
+          {/* Modal header */}
+          <div className="flex items-center justify-between bg-[#1c1c1c] px-5 py-3 border-b border-[#3a3a3a]">
+            <div className="flex items-center gap-3">
+              <CalendarIcon size={20} className="text-[#c8a85b]" />
+              <div>
+                <p className="text-sm font-bold text-white">Book your 20-minute Exploration Call</p>
+                <p className="text-xs text-gray-400">
+                  Booking as <span className="text-[#c8a85b] font-medium">{profile?.firstName || ""} {profile?.lastName || ""}</span>
+                  {profile?.email ? <> · <span className="text-[#c8a85b] font-medium">{profile.email}</span></> : null}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseCalendarModal}
+              className="inline-flex items-center gap-2 rounded-full bg-[#cd3cd3] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#b030b8]"
+            >
+              <X size={16} /> Done — Close
+            </button>
+          </div>
+
+          {/* Full-width iframe calendar */}
+          <div className="relative flex-1 bg-white">
+            <iframe
+              src={activeCalendarUrl}
+              title="Book Exploration Call"
+              className="absolute inset-0 h-full w-full border-0"
+              width="100%"
+              height="100%"
+              frameBorder="0"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* WARNING MODAL: IF CALENDAR WAS NOT OPENED */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-amber-500/50 bg-[#262626] p-6 shadow-2xl text-left relative">
+            <button
+              type="button"
+              onClick={() => setShowWarningModal(false)}
+              className="absolute top-4 right-4 rounded-full p-1 text-gray-400 hover:text-white hover:bg-white/10"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              {/* <AlertTriangle size={28} /> */}
+              <h3 className="text-lg font-bold text-white">Have you booked your Leadership Diagnostic slot?</h3>
+            </div>
+
+            <p className="text-sm text-gray-200 leading-relaxed mb-6">
+              Please select an appointment time in Larraine's Calendar before submitting your assessment.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenCalendar();
+                  setShowWarningModal(false);
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a85b] px-5 py-3.5 text-sm font-bold text-[#1c1c1c] shadow-lg transition hover:bg-[#d8b96b]"
+              >
+                <ExternalLink size={18} /> Open Google Calendar to Book Slot First ↗
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="w-full rounded-xl border border-gray-600 px-5 py-2.5 text-xs font-semibold text-gray-400 transition hover:bg-white/5"
+              >
+                Cancel & Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION MODAL: IF CALENDAR WAS ALREADY OPENED */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-[#cd3cd3]/50 bg-[#262626] p-6 shadow-2xl text-left relative">
+            <button
+              type="button"
+              onClick={() => setShowConfirmModal(false)}
+              className="absolute top-4 right-4 rounded-full p-1 text-gray-400 hover:text-white hover:bg-white/10"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 text-[#cd3cd3] mb-3">
+              <CheckCircle size={28} />
+              <h3 className="text-lg font-bold text-white">Finalize & Submit Assessment</h3>
+            </div>
+
+            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+              Are you ready to submit your diagnostic answers and deliver your personalized PDF report to <strong className="text-white">{profile?.email || "your registered email"}</strong>?
+            </p>
+
+            <div className="mb-6 p-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-xs space-y-1.5 text-gray-300">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Participant:</span>
+                <span className="font-semibold text-white">{profile?.firstName || ""} {profile?.lastName || ""}</span>
+              </div>
+              <div className="flex justify-between border-t border-[#2a2a2a] pt-1.5">
+                <span className="text-gray-400">Delivery Email:</span>
+                <span className="font-semibold text-white">{profile?.email || "—"}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={executeFinalSubmission}
+                disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#cd3cd3] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#b030b8]"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" /> Submitting...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={18} /> Confirm & Deliver PDF Report
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="w-full rounded-xl border border-gray-600 px-5 py-2.5 text-xs font-semibold text-gray-400 transition hover:bg-white/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

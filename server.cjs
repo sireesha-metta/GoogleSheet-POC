@@ -26,18 +26,14 @@ app.use(
 );
 app.use(express.json());
 
-const FILE_PATH = path.join(process.cwd(), "Leadership_Reset_Diagnostic_NR.xlsx");
+const FILE_PATH = path.join(process.cwd(), "Leadership_Reset_Diagnostic1.xlsx");
 const SHEET_NAME = "Diagnostic";
 const SCORE_SHEET_NAME = "Scores";
 const GOOGLE_SCRIPT_URL =
   process.env.GOOGLE_SCRIPT_URL ||
   "https://script.google.com/macros/s/AKfycbytHuWxCiTwSTM-1gbpt2UgWzGXWDhZD-QqllAyC6Tcy_xxrdD--Kk2QBjYGcXbubfY/exec";
 
-// const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@leanin-coaching.com").trim().toLowerCase();
-// const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Admin";
-// const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "User";
-// const ADMIN_MOBILE = process.env.ADMIN_MOBILE || "9876543210";
-// let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Lean@123";
+
 const TOKEN_TTL_MS = Number(process.env.TOKEN_TTL_MS || 8 * 60 * 60 * 1000);
 const REMEMBER_TOKEN_TTL_MS = Number(process.env.REMEMBER_TOKEN_TTL_MS || 7 * 24 * 60 * 60 * 1000);
 const sessions = new Map();

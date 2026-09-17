@@ -221,6 +221,7 @@ function Diagnostic() {
     const summaryRespondent = submissionSnapshot?.respondent || respondent || "Leader";
     const summaryTotalScore = Number(submissionSnapshot?.totalScore ?? totalScore ?? 0);
     const summaryWeightedScore = Number(submissionSnapshot?.totalWeightedScore ?? totalWeightedScore ?? 0);
+    const summaryPercent = Math.round((summaryWeightedScore / 91) * 100);
 
     return (
       <div className="min-h-screen bg-[#0F172A] text-white">
@@ -255,7 +256,8 @@ function Diagnostic() {
 
             <div className="rounded-3xl border border-slate-400 bg-[#1E293B] p-6 shadow-lg transition hover:-translate-y-1 hover:border-yellow-400/40">
               <p className="text-sm uppercase tracking-[0.3em] text-slate-100">Weighted Score</p>
-              <h2 className="mt-2 text-4xl font-bold text-yellow-300">{summaryWeightedScore} /100</h2>
+              <h2 className="mt-2 text-4xl font-bold text-yellow-300">{summaryWeightedScore} / 91</h2>
+              <p className="mt-2 text-sm text-slate-300">{summaryPercent}% of max</p>
             </div>
           </div>
 

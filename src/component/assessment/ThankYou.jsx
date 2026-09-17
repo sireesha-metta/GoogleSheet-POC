@@ -28,6 +28,33 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
   const isReschedule = Boolean(profile?.isReschedule) && !isCancelled;
   const isExisting = Boolean(profile?.isExistingSubmission) && !isReschedule && !isCancelled;
 
+  const scoring = profile?.scoring || null;
+  const zoneMeta = {
+    Green: {
+      headline: "Strong foundation",
+      subtitle: "Your leadership dynamic shows healthy decision patterns and open challenge.",
+      cardClass: "border-green-500/40 bg-green-950/30",
+      headlineClass: "text-green-300",
+      barClass: "from-red-400 via-amber-300 to-green-400",
+    },
+    Amber: {
+      headline: "Patterns worth exploring",
+      subtitle: "Some patterns may be quietly limiting decision quality - often without being fully visible yet.",
+      cardClass: "border-amber-500/40 bg-amber-950/30",
+      headlineClass: "text-amber-300",
+      barClass: "from-red-400 via-amber-300 to-green-400",
+    },
+    Red: {
+      headline: "Blind spots worth addressing",
+      subtitle: "Friction or unvoiced risks may be affecting how decisions currently get made.",
+      cardClass: "border-red-500/40 bg-red-950/30",
+      headlineClass: "text-red-300",
+      barClass: "from-red-400 via-amber-300 to-green-400",
+    },
+  };
+  const z = zoneMeta[scoring?.zone] || null;
+  const markerLeft = scoring ? Math.min(96, Math.max(4, scoring.overallPct)) : 50;
+
   return (
     <section className="min-h-screen bg-[#1c1c1c]" style={{ fontFamily: '"Aptos", "Trebuchet MS", sans-serif' }} >
       <div className="mx-auto flex min-h-screen max-w-6xl items-center px-6">
@@ -44,7 +71,7 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
 
           <p className="mt-2 max-w-3xl text-lg leading-8 text-gray-400">
             {isCancelled ? "Your 20 mins discussion slot has been cancelled as requested."
-              : isReschedule ? "Your 20 mins discussion slot with Lorraine Burns has been updated."
+              : isReschedule ? "Your 20 mins discussion slot has been updated."
                 : isExisting ? "You have already completed the Leadership Reset Diagnostic."
                   : "Thank you for taking the Leadership Reset Diagnostic."}
           </p>
@@ -109,6 +136,37 @@ export default function ThankYou({ profile, responseCount, mailInfo, onReturn, }
                 </p>
               </div>
             </div> */}
+
+            {/* Teaser: zone result + one small action */}
+            {!isCancelled && z && scoring?.action ? (
+              <div className={`mt-6 rounded-2xl border p-6 text-center ${z.cardClass}`}>
+                <h3 className={`text-2xl font-bold ${z.headlineClass}`}>{z.headline}</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-300">
+                  {z.subtitle}
+                </p>
+
+                {/* Spectrum slider: Blind spots -> Strong foundation */}
+                <div className="mx-auto mt-5 max-w-md">
+                  <div className="relative h-2 rounded-full bg-gradient-to-r from-red-500 via-amber-400 to-green-500">
+                    <div
+                      className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-transparent shadow"
+                      style={{ left: `${markerLeft}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-gray-400">
+                    <span>Blind spots</span>
+                    <span>Strong foundation</span>
+                  </div>
+                </div>
+
+                <div className="mx-auto mt-5 max-w-md rounded-xl border border-[#3a3a3a] bg-[#1f1f1f] p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#c8a85b]">
+                    One small shift to try this week
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-gray-300">{scoring.action}</p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-8 flex items-center justify-between">
 
