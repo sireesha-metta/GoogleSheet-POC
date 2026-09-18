@@ -33,7 +33,6 @@ export default function Dashboard() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -69,22 +68,20 @@ export default function Dashboard() {
   }, []);
 
   // Reset to page 1 when filters or sort changes
-  useEffect(() => { setPage(1); setExpanded(null); }, [searchQuery, dateFilter, statusFilter, pageSize, sortBy, sortOrder]);
+  useEffect(() => { setPage(1); setExpanded(null); }, [searchQuery, dateFilter, pageSize, sortBy, sortOrder]);
 
   const filtered = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     return submissions.filter((sub) => {
+      const respStatus = String(sub.respondentStatus || sub.status || "Active").toLowerCase();
+      if (respStatus === "inactive") return false;
+
       const respondent = String(sub.respondent || "").toLowerCase();
       const query = String(searchQuery || "").trim().toLowerCase();
 
       if (query && !respondent.includes(query)) return false;
-
-      if (statusFilter !== "all") {
-        const rStatus = String(sub.respondentStatus || sub.status || "Active").toLowerCase();
-        if (rStatus !== statusFilter.toLowerCase()) return false;
-      }
 
       if (dateFilter !== "all") {
         const submittedAt = new Date(sub.timestamp || 0);
@@ -122,7 +119,7 @@ export default function Dashboard() {
 
       return true;
     });
-  }, [submissions, searchQuery, dateFilter, statusFilter]);
+  }, [submissions, searchQuery, dateFilter]);
 
   const sorted = useMemo(() => {
     const data = [...filtered];
@@ -168,7 +165,6 @@ export default function Dashboard() {
   const clearFilters = () => {
     setSearchQuery("");
     setDateFilter("all");
-    setStatusFilter("active");
   };
 
   const [confirmModal, setConfirmModal] = useState({
@@ -180,12 +176,13 @@ export default function Dashboard() {
     onConfirm: null,
   });
 
-  const handleDelete = (submissionId) => {
+  const handleDelete = (submissionId, respondentName) => {
+    const nameStr = respondentName ? ` for "${respondentName}"` : "";
     setConfirmModal({
       isOpen: true,
-      title: "Mark Submission as Inactive",
-      message: "Are you sure you want to mark this submission as inactive? It will be moved to the Inactive view.",
-      confirmText: "Yes, Mark Inactive",
+      title: "Delete submission?",
+      message: `Do you want to delete submission${nameStr}? It will be removed from this list.`,
+      confirmText: "Yes, Delete",
       confirmColor: "red",
       onConfirm: () => handleConfirmDelete(submissionId),
     });
@@ -306,18 +303,12 @@ export default function Dashboard() {
 
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3 pt-4">
         <input className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Search respondent" value={searchQuery}  onChange={(e) => setSearchQuery(e.target.value)} />
         <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}  >
           {DATE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
-        </select>
-
-        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="active">Active Respondents</option>
-          <option value="inactive">Inactive Respondents</option>
-          <option value="all">All Status</option>
         </select>
 
         <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}  >
@@ -451,7 +442,7 @@ export default function Dashboard() {
                               ) : (
                                 <button
                                   className="whitespace-nowrap rounded-md border border-red-400 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 disabled:opacity-50"
-                                  onClick={() => handleDelete(sub.id)}
+                                  onClick={() => handleDelete(sub.id, sub.respondent)}
                                   disabled={deletingId === sub.id}
                                 >
                                   {deletingId === sub.id ? "Updating..." : "Delete"}

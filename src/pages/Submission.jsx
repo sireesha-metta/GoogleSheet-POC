@@ -146,12 +146,46 @@ export default function Submission() {
     };
   }, []);
 
+  const activeRespondents = useMemo(() => {
+    return respondents.filter((r) => String(r?.status || "Active").toLowerCase() === "active");
+  }, [respondents]);
+
+  const notStartedRespondents = useMemo(() => {
+    const startedKeys = new Set();
+
+    submissions.forEach((row) => {
+      const respId = row?.respondentId || row?.respondent_id;
+      const respEmail = normalizeText(row?.email);
+      if (respId) startedKeys.add(`id_${respId}`);
+      if (respEmail) startedKeys.add(`email_${respEmail}`);
+    });
+
+    drafts.forEach((row) => {
+      const respId = row?.respondent_id || row?.respondentId;
+      const respEmail = normalizeText(row?.email);
+      if (respId) startedKeys.add(`id_${respId}`);
+      if (respEmail) startedKeys.add(`email_${respEmail}`);
+    });
+
+    return activeRespondents.filter((respondent) => {
+      const idKey = respondent?.id ? `id_${respondent.id}` : null;
+      const emailKey = respondent?.email ? `email_${normalizeText(respondent.email)}` : null;
+
+      if (idKey && startedKeys.has(idKey)) return false;
+      if (emailKey && startedKeys.has(emailKey)) return false;
+      return true;
+    });
+  }, [activeRespondents, submissions, drafts]);
+
   const summary = useMemo(() => {
     const statusByRespondentKey = new Map();
     const startedRespondentKeys = new Set();
     const draftedRespondentKeys = new Set();
 
     submissions.forEach((row) => {
+      const status = String(row?.respondentStatus || row?.status || "Active").toLowerCase();
+      if (status === "inactive") return;
+
       const respId = row?.respondentId || row?.respondent_id;
       const respEmail = normalizeText(row?.email);
       const respondentKey = respId ? `id_${respId}` : (respEmail ? `email_${respEmail}` : null);
@@ -183,9 +217,8 @@ export default function Submission() {
 
     const submitted = Array.from(statusByRespondentKey.values()).filter((status) => status === "submitted").length;
     const drafted = drafts.length;
-    const respondentCount = respondents.length;
-    const activeKeys = new Set([...startedRespondentKeys, ...draftedRespondentKeys]);
-    const notStarted = Math.max(respondentCount - activeKeys.size, 0);
+    const respondentCount = activeRespondents.length;
+    const notStarted = notStartedRespondents.length;
 
     return {
       submitted,
@@ -195,34 +228,7 @@ export default function Submission() {
       respondentCount,
       startedCount: startedRespondentKeys.size,
     };
-  }, [respondents, submissions, drafts]);
-
-  const notStartedRespondents = useMemo(() => {
-    const startedKeys = new Set();
-
-    submissions.forEach((row) => {
-      const respId = row?.respondentId || row?.respondent_id;
-      const respEmail = normalizeText(row?.email);
-      if (respId) startedKeys.add(`id_${respId}`);
-      if (respEmail) startedKeys.add(`email_${respEmail}`);
-    });
-
-    drafts.forEach((row) => {
-      const respId = row?.respondent_id || row?.respondentId;
-      const respEmail = normalizeText(row?.email);
-      if (respId) startedKeys.add(`id_${respId}`);
-      if (respEmail) startedKeys.add(`email_${respEmail}`);
-    });
-
-    return respondents.filter((respondent) => {
-      const idKey = respondent?.id ? `id_${respondent.id}` : null;
-      const emailKey = respondent?.email ? `email_${normalizeText(respondent.email)}` : null;
-
-      if (idKey && startedKeys.has(idKey)) return false;
-      if (emailKey && startedKeys.has(emailKey)) return false;
-      return true;
-    });
-  }, [respondents, submissions, drafts]);
+  }, [activeRespondents, notStartedRespondents, submissions, drafts]);
 
   const draftAssessmentOptions = useMemo(() => {
     const options = new Set( drafts.map((item) => String(item?.assessment_type || "").trim()).filter(Boolean));

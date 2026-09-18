@@ -31,7 +31,6 @@ const Admins = () => {
   const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
   const [actionBusyId, setActionBusyId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [sortKey, setSortKey] = useState("firstName");
   const [sortDir, setSortDir] = useState("asc");
   const [pageSize, setPageSize] = useState(10);
@@ -46,6 +45,14 @@ const Admins = () => {
   const [adminCreateBusy, setAdminCreateBusy] = useState(false);
   const [adminCreateMessage, setAdminCreateMessage] = useState(null);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "",
+    confirmColor: "red",
+    onConfirm: null,
+  });
   const [adminErrors, setAdminErrors] = useState({
     firstName: "",
     lastName: "",
@@ -118,10 +125,19 @@ const Admins = () => {
     cancelEdit();
   };
 
-  const removeAdmin = async (id, fullName) => {
-    const ok = window.confirm(`Delete admin ${fullName}?`);
-    if (!ok) return;
+  const removeAdmin = (id, fullName) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete admin?",
+      message: `Do you want to delete admin "${fullName}"? They will be removed from this list.`,
+      confirmText: "Yes, Delete",
+      confirmColor: "red",
+      onConfirm: () => handleConfirmRemove(id),
+    });
+  };
 
+  const handleConfirmRemove = async (id) => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
     setActionBusyId(id);
     setError("");
 
@@ -140,17 +156,16 @@ const Admins = () => {
     const q = String(searchQuery || "").trim().toLowerCase();
 
     const filtered = admins.filter((row) => {
+      const isActive = String(row.status || "Active").toLowerCase() === "active";
+      if (!isActive) return false;
+
       const matchesSearch =
         !q ||
         [row.firstName, row.lastName, row.mobile, row.email, row.status]
           .map((v) => String(v || "").toLowerCase())
           .some((v) => v.includes(q));
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        String(row.status || "").toLowerCase() === statusFilter;
-
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
 
     filtered.sort((a, b) => {
@@ -165,7 +180,7 @@ const Admins = () => {
     });
 
     return filtered;
-  }, [admins, searchQuery, statusFilter, sortKey, sortDir]);
+  }, [admins, searchQuery, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedAdmins.length / pageSize));
 
@@ -176,7 +191,7 @@ const Admins = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, pageSize]);
+  }, [searchQuery, pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -235,6 +250,7 @@ const Admins = () => {
   };
 
   const openAdminModal = () => {
+    setAdminForm({ firstName: "", lastName: "", mobile: "", email: "", password: "" });
     setAdminCreateMessage(null);
     setAdminErrors({ firstName: "", lastName: "", email: "", mobile: "", password: "" });
     setShowAdminModal(true);
@@ -242,6 +258,8 @@ const Admins = () => {
 
   const closeAdminModal = () => {
     if (adminCreateBusy) return;
+    setAdminForm({ firstName: "", lastName: "", mobile: "", email: "", password: "" });
+    setAdminErrors({ firstName: "", lastName: "", email: "", mobile: "", password: "" });
     setShowAdminModal(false);
   };
 
@@ -335,16 +353,9 @@ const Admins = () => {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4 pt-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 pt-4">
         <input  type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search name, email, mobile" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
 
         <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" >
@@ -601,7 +612,7 @@ const Admins = () => {
               </div>
             )}
 
-            <form className="space-y-4" onSubmit={handleCreateAdmin}>
+            <form className="space-y-4" onSubmit={handleCreateAdmin} autoComplete="off">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="relative">
                   <UserIcon className="absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-yellow-400" />
@@ -613,6 +624,7 @@ const Admins = () => {
                     onChange={(e) => handleAdminFormChange("firstName", e.target.value)}
                     error={adminErrors.firstName}
                     showErrorInPlaceholder={true}
+                    autoComplete="off"
                   />
                 </div>
 
@@ -626,6 +638,7 @@ const Admins = () => {
                     onChange={(e) => handleAdminFormChange("lastName", e.target.value)}
                     error={adminErrors.lastName}
                     showErrorInPlaceholder={true}
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -640,6 +653,7 @@ const Admins = () => {
                   onChange={(e) => handleAdminFormChange("email", e.target.value)}
                   error={adminErrors.email}
                   showErrorInPlaceholder={true}
+                  autoComplete="off"
                 />
               </div>
 
@@ -653,6 +667,7 @@ const Admins = () => {
                   onChange={(e) => handleAdminFormChange("mobile", e.target.value)}
                   error={adminErrors.mobile}
                   showErrorInPlaceholder={true}
+                  autoComplete="off"
                 />
               </div>
 
@@ -665,7 +680,8 @@ const Admins = () => {
                   value={adminForm.password}
                   onChange={(e) => handleAdminFormChange("password", e.target.value)}
                   error={adminErrors.password}
-                  showErrorInPlaceholder={false}
+                  showErrorInPlaceholder={true}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -693,6 +709,47 @@ const Admins = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 text-center">
+            <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+              confirmModal.confirmColor === "red" ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
+            }`}>
+              {confirmModal.confirmColor === "red" ? (
+                <TrashIcon className="h-7 w-7" />
+              ) : (
+                <CheckIcon className="h-7 w-7" />
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-800">{confirmModal.title}</h3>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">{confirmModal.message}</p>
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-1/2 rounded-xl border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className={`w-1/2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-md transition ${
+                  confirmModal.confirmColor === "red"
+                    ? "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                }`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       )}
